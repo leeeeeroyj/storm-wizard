@@ -258,7 +258,6 @@ export class SkyScene extends Phaser.Scene {
     this.state = 'play';
     this.nextSpawn = 1.2;
     this.banner(`WAVE ${n}`, 14, 1.8);
-    this.backdrop.storm = bandFor(n);
   }
 
   update(_time: number, delta: number) {

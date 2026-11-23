@@ -329,19 +329,26 @@ Each one ends playable, tested, committed, pushed and live.
 - **2026-11-23 The touch keys are page elements, not canvas drawings,** so they sit beside or below the game instead of over the sky. On a touch screen the game is fitted into the room the keys leave, so nothing moves when they appear. `layoutFor` picks side columns or a bottom row, whichever leaves the game bigger; keys are 56–96 CSS px. Pressed keys turn over (light with dark ink), ⚡ is dashed and faint until ×4 and solid after, and the digits dim during a misfire's lockout. Shape and contrast, never hue alone.
 - **2026-11-23 Touch gets a way back to the title:** RESUME and TITLE buttons on the pause panel, and a TITLE button on the game-over panel. The II and speaker take a thumb-sized area around them.
 - **2026-11-23 The user's play test:** the phone was fine (small, as expected), and the iPad and computer were great. Breeze is easy enough for a beginner, and the sprites stay as they are.
-- **2026-11-23 The sky is drawn in three depths, with finer pixels further away** (the user's idea). Far layers are baked at 4 texels per design pixel, one per canvas pixel: the gradient, stars, the moon, far rain and the storm towers. Middle layers are baked at 2: the islets and wisps. The cloud deck, near rain and islands stay at 1. The storm towers are canvas arcs with a gradient, not per-pixel JavaScript, so the sky bakes in about 0.1–0.3 s on a desktop. Each tower's lit copy for the sheet lightning is baked one per frame after the scene starts. Lightning comes more often in later wave bands, and never under reduced motion; neither do the twinkling stars. The backdrop stays dark behind the white plates and stones.
+- **2026-11-23 The sky is drawn in three depths, with finer pixels further away** (the user's idea). Far layers are baked at 4 texels per design pixel, one per canvas pixel: the gradient, stars, the moon and far rain. The middle layer, the wisps, is baked at 2. The cloud deck, near rain and islands stay at 1. Twinkling stars stop under reduced motion. The backdrop stays dark behind the white plates and stones.
+- **2026-11-23 No distant storm towers or far-off islets.** The user didn't like the cloud billows rising from the horizon or the floating platforms, so both were removed, along with the sheet lightning inside the towers.
+- **2026-11-23 The islands get more detail but stay at 1 px per design pixel,** like the sprites (the user asked for a 16-bit look). From the top down:
+  - tufts and the odd flower on a three-row turf that hangs raggedly over the soil;
+  - soil with pebbles;
+  - rock in layers, lit from the upper right and dithered 2×2 between five shades into the underside;
+  - an outline, a rough underside with hanging spurs, and roots and vines.
 - **2026-11-22 A new banner replaces the last** (wave start, wave clear, Thunderclap), so two never overlap.
 
 ## Open questions
 
 - None. (Ball lightning and towers: the user played and kept them, 2026-11-23.)
 
-## Status (2026-11-23: milestone 6 done, played by the user on a phone, iPad and computer; the sky redrawn in depth)
+## Status (2026-11-23: milestone 6 done and played by the user; the sky and islands redrawn)
 
 - **Done:** Part A, and milestones 1–6. Milestone 6 is live at https://leeeeeroyj.github.io/storm-wizard/.
-- **Since milestone 6:** the sky in three depths (`sky.ts`): stars, moon, far rain and storm towers with sheet lightning at canvas resolution; islets and wisps at half-pixels; the near layers unchanged.
+- **Since milestone 6:**
+  - **The sky:** stars, the moon and far rain at canvas resolution, and wisps at half-pixels.
+  - **The islands:** redrawn with turf, soil, layered moonlit rock, roots and vines, still at 1 px per design pixel.
 - **Verified:**
   - `m1`–`m6` tests 11/11, 23/23, 21/21, 35/35, 19/19, and 17/17 at each of the two touch sizes.
-  - Bake time measured.
-  - Screenshots looked at: the plates and stones read clearly over the towers, and the flash fades out softly.
+  - Screenshots looked at.
 - **Next:** milestone 7, attract mode with the pilot, then Arcadia's live demo and phone loop.

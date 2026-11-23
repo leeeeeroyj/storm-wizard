@@ -3,9 +3,10 @@ import { BACKDROP, GROUND, HEIGHT, ISLANDS, TOP, WIDTH } from './config';
 
 // The backdrop, drawn in code as pixel art in three depths. The further away a layer is, the finer its pixels:
 // - far (¼ design pixel, the canvas's own pixels): the sky's gradient, a dense starfield with a few twinkling, a dim
-//   crescent moon, towering storm clouds on the horizon that sheet lightning lights from inside, and fine rain;
-// - middle (½ design pixel): far-off floating islets and thin drifting wisps;
-// - near (1 design pixel): the cloud deck, the rain and the three islands the game is played on.
+//   crescent moon and fine rain;
+// - middle (½ design pixel): thin drifting wisps;
+// - near (1 design pixel): the cloud deck, the rain and the three islands the game is played on, drawn like the
+//   sprites, with more detail: grass, soil, layered rock lit by the moon, and roots and vines hanging below.
 // Textures are baked once per game and shared by every scene. Nothing here carries meaning: it's all atmosphere,
 // kept dark behind the white plates and stones.
 
@@ -80,12 +81,6 @@ function bakePx(scene: Phaser.Scene, key: string, w: number, h: number, paint: (
 const FAR = 4, MID = 2;
 /** The moon, in design pixels. */
 const MOON = { x: 340, y: 46, r: 7 };
-/** The distant storm clouds span these rows (design pixels). */
-const BANK = { top: 96, bottom: 214 };
-/** The towers of the distant storm: centre x and height above the bank's base, design pixels. */
-const TOWERS = [[34, 58], [120, 40], [200, 72], [270, 34], [354, 62]] as const;
-/** The width of the lit copy around each tower, design pixels. */
-const LIT_W = 100;
 /** Bright stars that twinkle, in far texels. Filled by `bakeFar`. */
 const twinklers: { x: number; y: number; ph: number; f: number }[] = [];
 
@@ -146,135 +141,8 @@ function bakeFar(scene: Phaser.Scene) {
   });
 }
 
-// The distant storm: a bank of billows along the horizon with towering heads, each billow a little sphere lit by
-// the moon from the upper right. A second copy, lit from inside, is what the sheet lightning shows.
-const W_FAR = WIDTH * FAR;
-const H2 = (BANK.bottom - BANK.top) * FAR;
-let billowCache: { x: number; y: number; r: number }[] | undefined;
-
-function stormBillows() {
-  if (billowCache) return billowCache;
-  const W = W_FAR;
-  const billows: { x: number; y: number; r: number }[] = [];
-  {
-    const r = mulberry32(31);
-    const base = (BANK.bottom - BANK.top - 28) * FAR;
-    for (let x = -10 * FAR; x < W + 10 * FAR; x += (5 + r() * 6) * FAR) billows.push({ x, y: base + (r() * 6 - 1) * FAR, r: (8 + r() * 7) * FAR });
-    for (const [tx, th] of TOWERS) {
-      for (let n = 0; n < th * 2.2; n++) {
-        const f = r() ** 0.8;
-        // A column that narrows as it climbs, bulging into a cauliflower head near the top.
-        const width = (14 - f * 6 + (f > 0.75 ? 6 : 0)) * (0.6 + th / 120);
-        billows.push({ x: (tx + (r() - 0.5) * 2 * width + f * 5) * FAR, y: base - f * th * FAR, r: (2.5 + r() * (f > 0.7 ? 7 : 5)) * FAR });
-      }
-      // The tallest spread an anvil at the top.
-      if (th > 60) for (let k = 0; k < 26; k++) {
-        const u = r() * 2 - 1;
-        billows.push({ x: (tx + 6 + u * 30) * FAR, y: base - (th + 2 - Math.abs(u) * 5 + r() * 3) * FAR, r: (2.5 + r() * 2.5) * FAR });
-      }
-    }
-    // Higher billows first, so the lower ones' sunlit tops overlap the shadowed bellies above them.
-    billows.sort((a, b) => a.y - b.y);
-  }
-  return (billowCache = billows);
-}
-
-/** Paints the storm bank; with `tower`, only that tower, lit from inside and fading out from its core. */
-function paintBank(g: CanvasRenderingContext2D, [deep, body, rim]: string[], glow?: string, tower?: readonly [number, number]) {
-  const off = tower ? (tower[0] - LIT_W / 2) * FAR : 0;
-  // Each billow is a sphere lit by the moon from the upper right: a gradient across it, and a faint dark rim.
-  const ux = 0.5 / 0.986, uy = -0.85 / 0.986;
-  for (const b of stormBillows()) {
-    if (tower && Math.abs(b.x / FAR - tower[0]) > LIT_W / 2 + b.r / FAR) continue;
-    // The strip tiles sideways: a billow over an edge is drawn again on the other side.
-    const wraps = tower ? [0] : b.x - b.r < 0 ? [0, W_FAR] : b.x + b.r >= W_FAR ? [0, -W_FAR] : [0];
-    for (const w of wraps) {
-      const x = b.x + w - off;
-      const grad = g.createLinearGradient(x - ux * b.r, b.y - uy * b.r, x + ux * b.r, b.y + uy * b.r);
-      grad.addColorStop(0, deep);
-      grad.addColorStop(0.23, deep);
-      grad.addColorStop(0.635, body);
-      grad.addColorStop(0.905, rim);
-      grad.addColorStop(1, rim);
-      g.beginPath();
-      g.arc(x, b.y, b.r, 0, Math.PI * 2);
-      g.fillStyle = grad;
-      g.fill();
-      g.lineWidth = 1.2;
-      g.strokeStyle = 'rgba(10, 14, 34, 0.35)';
-      g.stroke();
-    }
-  }
-  if (glow && tower) {
-    // Lit from inside, brightest at the tower's core, and nothing beyond its glow.
-    const cx = LIT_W / 2 * FAR, cy = H2 - (28 + tower[1] * 0.45) * FAR, r = 46 * FAR;
-    g.save();
-    g.translate(cx, cy);
-    g.scale(1, 1 / 1.2);
-    const tint = g.createRadialGradient(0, 0, 0, 0, 0, r);
-    tint.addColorStop(0, glow);
-    tint.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    g.globalCompositeOperation = 'source-atop';
-    g.globalAlpha = 0.7;
-    g.fillStyle = tint;
-    g.fillRect(-r, -r, r * 2, r * 2);
-    const mask = g.createRadialGradient(0, 0, 0, 0, 0, r);
-    mask.addColorStop(0, '#000');
-    mask.addColorStop(0.55, '#000');
-    mask.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    g.globalCompositeOperation = 'destination-in';
-    g.globalAlpha = 1;
-    g.fillStyle = mask;
-    g.fillRect(-r * 2, -r * 2, r * 4, r * 4);
-    g.restore();
-    // destination-in only clears what it covers: clear the rest.
-    g.globalCompositeOperation = 'destination-in';
-    g.beginPath();
-    g.ellipse(cx, cy, r, r * 1.2, 0, 0, Math.PI * 2);
-    g.fillStyle = '#000';
-    g.fill();
-  }
-  // The bank fades into the haze at its foot.
-  const foot = g.createLinearGradient(0, H2 - 20 * FAR, 0, H2);
-  foot.addColorStop(0, 'rgba(0, 0, 0, 0)');
-  foot.addColorStop(1, '#000');
-  g.globalCompositeOperation = 'destination-out';
-  g.fillStyle = foot;
-  g.fillRect(0, H2 - 20 * FAR, g.canvas.width, 20 * FAR);
-  g.globalCompositeOperation = 'source-over';
-}
-
-function bakeStorm(scene: Phaser.Scene) {
-  bake(scene, 'storm-far', W_FAR, H2, (g) => paintBank(g, ['#0f1532', '#19234c', '#3f5089']));
-}
-
-/** One tower's lit copy for the sheet lightning. Baked one per frame after the scene starts, so loading stays quick. */
-function bakeLit(scene: Phaser.Scene, i: number) {
-  bake(scene, `storm-far-lit-${i}`, LIT_W * FAR, H2, (g) => paintBank(g, ['#28356a', '#44558f', '#a3b1e6'], '#cdd6ff', TOWERS[i]));
-}
-
-/** Far-off islets, in middle texels: [x, y, width] in design pixels. */
-const ISLETS = [[70, 150, 26], [158, 140, 16], [306, 154, 32], [394, 138, 14]] as const;
-
 function bakeMid(scene: Phaser.Scene) {
-  const W = WIDTH * MID, H = HEIGHT * MID;
-  bakePx(scene, 'islets-far', W, H, (p) => {
-    const r = mulberry32(41);
-    // Hazier and lighter than the near islands: far things fade into the air.
-    const rock = rgb('#2a3765'), top = rgb('#3b5080'), edge = rgb('#55709a'), lamp = rgb('#f0cd86');
-    for (const [ix, iy, iw] of ISLETS) {
-      const x0 = (ix - iw / 2) * MID, x1 = (ix + iw / 2) * MID, y0 = iy * MID, mid = (x0 + x1) / 2, half = (x1 - x0) / 2;
-      for (let x = Math.round(x0); x <= x1; x++) {
-        const t = Math.abs(x - mid) / half;
-        const depth = Math.round((1 - t * t) * iw * 0.55 * MID * 0.6 + r() * 3);
-        for (let y = y0; y < y0 + depth; y++) p.put(x, y, y < y0 + 1 ? edge : y < y0 + 3 ? top : rock, 0.9);
-        // Tiny trees and huts along the top.
-        if (r() < 0.18) for (let k = 1; k <= 1 + Math.floor(r() * 3); k++) p.put(x, y0 - k, top, 0.85);
-      }
-      // A lit window or two.
-      for (let k = 0; k < (iw > 20 ? 2 : 1); k++) p.put(mid + (r() - 0.5) * half, y0 - 1, lamp, 0.9);
-    }
-  });
+  const W = WIDTH * MID;
   // Thin wisps that drift across the middle of the sky (a strip that tiles sideways).
   bakePx(scene, 'wisps', W, 70 * MID, (p) => {
     const r = mulberry32(53);
@@ -292,9 +160,102 @@ function bakeMid(scene: Phaser.Scene) {
   });
 }
 
+/** The island palette: the sprites' kind of colours, a few shades each. */
+const ISLE = {
+  tuft: rgb('#8fd18a'), grass: rgb('#6cb86e'), grassMid: rgb('#4f9a5c'), grassDark: rgb('#3a7a4c'),
+  soil: rgb('#5c4838'), soilDark: rgb('#45352b'), pebble: rgb('#7a6a5c'),
+  // Rock, lightest (moonlit, upper right) to deepest (the underside).
+  rock: ['#5b567e', '#48446a', '#3a3758', '#2d2a46', '#221f37'].map(rgb),
+  outline: rgb('#16142a'), root: rgb('#4a362c'), rootDark: rgb('#33251f'), leaf: rgb('#5aa264'),
+  flower: [rgb('#f3e9a8'), rgb('#eef2ff'), rgb('#f2b8c6')],
+};
+
+/**
+ * The three islands the game stands on, at 1 px per design pixel like the sprites: a grass top with tufts and the
+ * odd flower, a band of soil with pebbles, then layered rock lit by the moon from the upper right and shaded into the
+ * underside (a 2×2 dither between shades, as 16-bit art did), outlined, with roots and vines hanging below.
+ */
+function bakeIslands(scene: Phaser.Scene) {
+  bakePx(scene, 'islands', WIDTH, HEIGHT, (p) => {
+    const r = mulberry32(21);
+    for (const [a, b] of ISLANDS) {
+      const mid = (a + b) / 2, half = (b - a) / 2, big = b - a > 60;
+      const maxD = big ? 27 : 19;
+      // The underside: a rounded point with a rough, rocky edge and a few hanging spurs.
+      const depth: number[] = [];
+      const ph1 = r() * 6, ph2 = r() * 6;
+      const spurs = Array.from({ length: big ? 4 : 1 }, () => ({ x: a + 10 + r() * (b - a - 20), w: 2 + r() * 3, h: 3 + r() * 5 }));
+      for (let x = a; x <= b; x++) {
+        const t = Math.abs(x - mid) / half;
+        let d = Math.max(4, (1 - t ** 1.8) ** 0.9 * maxD);
+        d += Math.sin(x * 0.31 + ph1) * 1.4 + Math.sin(x * 0.11 + ph2) * 1.8;
+        for (const sp of spurs) d += Math.max(0, sp.h * (1 - Math.abs(x - sp.x) / sp.w));
+        depth.push(Math.max(3, Math.round(d)));
+      }
+      const dAt = (x: number) => (x < a || x > b ? 0 : depth[x - a]);
+      // A wobbly line every few rows: the rock's layers.
+      const strata = (x: number, y: number) => (y - GROUND + Math.round(Math.sin(x * 0.13 + ph1) * 1.5 + Math.sin(x * 0.37) * 0.6)) % 6 === 5;
+
+      for (let x = a; x <= b; x++) {
+        const d = dAt(x), side = (x - mid) / half;
+        // The turf hangs over the soil in a ragged edge.
+        const grassDrip = 3 + (r() < 0.45 ? 1 : 0) + (r() < 0.15 ? 1 : 0);
+        const soilEnd = grassDrip + 4;
+        for (let k = 0; k < d; k++) {
+          const y = GROUND + k;
+          let c: RGB;
+          if (k === 0) c = r() < 0.15 ? ISLE.tuft : ISLE.grass;
+          else if (k === 1) c = ISLE.grass;
+          else if (k === 2) c = ISLE.grassMid;
+          else if (k < grassDrip) c = ISLE.grassDark;
+          else if (k < soilEnd) c = r() < 0.04 ? ISLE.pebble : k === soilEnd - 1 || (x * 7 + k * 3) % 11 === 0 ? ISLE.soilDark : ISLE.soil;
+          else {
+            // Light falls from the upper right and fades towards the underside; layers catch it on their top edge.
+            let v = 1.4 - side * 0.9 + ((k - soilEnd) / Math.max(1, d - soilEnd)) * 2.6;
+            if (strata(x, y)) v += 1;
+            else if (strata(x, y + 1)) v -= 0.6;
+            if (r() < 0.04) v += 0.8;
+            const lo = Math.max(0, Math.min(ISLE.rock.length - 1, Math.floor(v)));
+            const hi = Math.min(ISLE.rock.length - 1, lo + 1);
+            // A 2×2 checker between neighbouring shades.
+            c = v - lo > 0.5 && (x + y) % 2 === 0 ? ISLE.rock[hi] : ISLE.rock[lo];
+          }
+          // The outline: the underside, and the sides where the next column is shorter.
+          if (k >= 2 && (k === d - 1 || k >= dAt(x - 1) || k >= dAt(x + 1))) c = ISLE.outline;
+          p.put(x, y, c);
+        }
+        // Grass curls over the edges at either end.
+        if (x === a || x === b) p.put(x, GROUND - 1, ISLE.grassMid);
+        // Tufts, taller tufts and the odd flower along the top.
+        const roll = r();
+        if (roll < 0.3) p.put(x, GROUND - 1, ISLE.grass);
+        else if (roll < 0.38) {
+          p.put(x, GROUND - 1, ISLE.grass);
+          p.put(x, GROUND - 2, ISLE.tuft);
+        } else if (roll < 0.41) {
+          p.put(x, GROUND - 1, ISLE.grassMid);
+          p.put(x, GROUND - 2, ISLE.flower[Math.floor(r() * ISLE.flower.length)]);
+        }
+      }
+      // Roots and vines hanging from the underside, drifting a little as they go.
+      for (let n = 0; n < (big ? 9 : 3); n++) {
+        let x = Math.round(a + 6 + r() * (b - a - 12));
+        const vine = r() < 0.45, len = 3 + Math.floor(r() * (vine ? 9 : 6));
+        let y = GROUND + dAt(x) - 1;
+        for (let k = 0; k < len; k++) {
+          y++;
+          if (r() < 0.3) x += r() < 0.5 ? -1 : 1;
+          if (y >= HEIGHT) break;
+          p.put(x, y, vine ? ISLE.grassDark : k % 3 === 2 ? ISLE.rootDark : ISLE.root);
+          if (vine && k % 3 === 1) p.put(x + (k % 2 ? 1 : -1), y, ISLE.leaf);
+        }
+      }
+    }
+  });
+}
+
 function bakeAll(scene: Phaser.Scene) {
   bakeFar(scene);
-  bakeStorm(scene);
   bakeMid(scene);
   const clouds = (key: string, seed: number, color: string, base: number, amp: number) =>
     bake(scene, key, WIDTH, 40, (g) => {
@@ -311,25 +272,7 @@ function bakeAll(scene: Phaser.Scene) {
     });
   clouds('clouds-back', 3, '#1a2448', 6, 7);
   clouds('clouds-front', 11, '#232f5a', 2, 5);
-  bake(scene, 'islands', WIDTH, HEIGHT, (g) => {
-    const r = mulberry32(21);
-    for (const [a, b] of ISLANDS) {
-      const mid = (a + b) / 2, half = (b - a) / 2;
-      for (let x = a; x <= b; x++) {
-        const t = Math.abs(x - mid) / half;
-        const depth = Math.round((1 - t * t) * (b - a > 60 ? 26 : 20) + r() * 3);
-        for (let y = GROUND; y < GROUND + depth; y++) {
-          const k = (y - GROUND) / Math.max(1, depth);
-          g.fillStyle = y < GROUND + 2 ? '#5aa264' : y < GROUND + 3 ? '#3d7a4c' : k > 0.85 ? '#2a2a44' : (x + y) % 7 === 0 ? '#4a4567' : '#3b3856';
-          g.fillRect(x, y, 1, 1);
-        }
-        if (r() < 0.25) {
-          g.fillStyle = '#79c27c';
-          g.fillRect(x, GROUND - 1, 1, 1);
-        }
-      }
-    }
-  });
+  bakeIslands(scene);
   // The wizard's own little storm cloud, 24×9: a pale rim over a darker belly.
   bake(scene, 'wizcloud', 24, 9, (g) => {
     for (const [col, dy] of [['#8a9ad0', 0], ['#4d5d92', 1]] as const) {
@@ -345,40 +288,25 @@ function bakeAll(scene: Phaser.Scene) {
 interface Drop { x: number; y: number; s: number }
 
 const REDUCED = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-/** Sheet lightning's flicker: [time s, brightness] keyframes. */
-const FLICKER = [[0, 0], [0.04, 0.65], [0.1, 0.12], [0.17, 0.5], [0.55, 0]] as const;
-/** Seconds between distant flashes, by storm level (the wave band). */
-const FLASH_GAP = [[8, 15], [5, 10], [3, 7]] as const;
 
 /** The animated backdrop for a scene. Call `update(dt)` every frame. */
 export class Backdrop {
   private back: Phaser.GameObjects.TileSprite;
   private front: Phaser.GameObjects.TileSprite;
   private wisps: Phaser.GameObjects.TileSprite;
-  /** Each tower's lit copy, once baked (see `bakeLit`). */
-  private lit: (Phaser.GameObjects.Image | undefined)[] = TOWERS.map(() => undefined);
-  private readonly litDepth: number;
   private stars: Phaser.GameObjects.Graphics;
   private farRain: Phaser.GameObjects.Graphics;
   private rain: Phaser.GameObjects.Graphics;
   private drops: Drop[];
   private farDrops: Drop[];
   private time = 0;
-  private flashIn: number;
-  private flashT = -1;
-  private flashing = 0;
-  /** How stormy the far sky is: 0 calm (the title, waves 1–3), 1, 2. More often lightning. */
-  storm = 0;
 
-  constructor(private readonly scene: Phaser.Scene, depth = 0) {
+  constructor(scene: Phaser.Scene, depth = 0) {
     bakeAll(scene);
     const d = (k: number) => depth + k / 100;
     scene.add.image(0, 0, 'sky-far').setOrigin(0).setScale(1 / FAR).setDepth(d(0));
     this.stars = scene.add.graphics().setDepth(d(1));
-    scene.add.image(0, BANK.top, 'storm-far').setOrigin(0).setScale(1 / FAR).setDepth(d(2));
-    this.litDepth = d(3);
     this.farRain = scene.add.graphics().setDepth(d(4));
-    scene.add.image(0, 0, 'islets-far').setOrigin(0).setScale(1 / MID).setDepth(d(5));
     this.wisps = scene.add.tileSprite(0, TOP + 30, WIDTH, 70, 'wisps').setOrigin(0).setTileScale(1 / MID).setDepth(d(6));
     this.back = scene.add.tileSprite(0, TOP - 2, WIDTH, 40, 'clouds-back').setOrigin(0).setDepth(d(10));
     this.front = scene.add.tileSprite(0, TOP - 6, WIDTH, 40, 'clouds-front').setOrigin(0).setDepth(d(20));
@@ -388,18 +316,10 @@ export class Backdrop {
     this.drops = Array.from({ length: BACKDROP.rain.drops }, () => ({ x: Math.random() * WIDTH, y: Math.random() * HEIGHT, s: lo + Math.random() * (hi - lo) }));
     // Far rain: finer, fainter and slower, so it reads as further away.
     this.farDrops = Array.from({ length: 110 }, () => ({ x: Math.random() * WIDTH, y: Math.random() * HEIGHT, s: (lo + Math.random() * (hi - lo)) * 0.45 }));
-    this.flashIn = 2 + Math.random() * 4;
   }
 
   update(dt: number) {
     this.time += dt;
-    // One lit tower per frame until all five are ready.
-    const missing = this.lit.indexOf(undefined);
-    if (missing >= 0 && !REDUCED) {
-      bakeLit(this.scene, missing);
-      this.lit[missing] = this.scene.add.image(TOWERS[missing][0] - LIT_W / 2, BANK.top, `storm-far-lit-${missing}`)
-        .setOrigin(0).setScale(1 / FAR).setDepth(this.litDepth).setAlpha(0);
-    }
     const [cb, cf] = BACKDROP.cloudSpeed;
     this.back.tilePositionX = Math.round(this.time * cb) % WIDTH;
     this.front.tilePositionX = Math.round(this.time * cf) % WIDTH;
@@ -413,31 +333,6 @@ export class Backdrop {
         s.fillStyle(0xf4f6ff, a * 0.9).fillRect(t.x / FAR, t.y / FAR, 1 / FAR, 1 / FAR);
         if (a > 0.8) s.fillStyle(0xf4f6ff, (a - 0.8) * 2).fillRect((t.x - 1) / FAR, t.y / FAR, 3 / FAR, 1 / FAR).fillRect(t.x / FAR, (t.y - 1) / FAR, 1 / FAR, 3 / FAR);
       }
-
-    // Sheet lightning inside one of the distant towers (never under reduced motion).
-    if (!REDUCED) {
-      this.flashIn -= dt;
-      if (this.flashIn <= 0) {
-        const [lo, hi] = FLASH_GAP[Math.max(0, Math.min(2, this.storm))];
-        this.flashIn = lo + Math.random() * (hi - lo);
-        this.flashT = 0;
-        const ready = this.lit.flatMap((l, i) => (l ? [i] : []));
-        this.flashing = ready[Math.floor(Math.random() * ready.length)] ?? -1;
-      }
-      if (this.flashT >= 0) {
-        this.flashT += dt;
-        let a = 0;
-        for (let i = 1; i < FLICKER.length; i++) {
-          const [t0, a0] = FLICKER[i - 1], [t1, a1] = FLICKER[i];
-          if (this.flashT <= t1) {
-            a = a0 + ((a1 - a0) * (this.flashT - t0)) / (t1 - t0);
-            break;
-          }
-        }
-        this.lit[this.flashing]?.setAlpha(a);
-        if (this.flashT > FLICKER[FLICKER.length - 1][0]) this.flashT = -1;
-      }
-    }
 
     const fr = this.farRain.clear().fillStyle(0x8fa4dc, 0.2);
     for (const d of this.farDrops) {

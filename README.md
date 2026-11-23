@@ -14,7 +14,7 @@ An arcade math game: hail falls on the sky islands, and every stone carries a su
 ![Vite](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-![Storm Wizard: a lightning bolt from the left tower bursts a hailstone for 150 points. Above it, a storm crow carries 11 × 12 between two diamonds, a split cloud carries 8 + 5 over an underline, ball lightning carries 9 × 3 between dashed lines, and hailstones carry 7 × 8 and 9 + 6. Behind them, finely drawn storm clouds tower on the horizon under a crescent moon and stars, with far-off floating islets. Below, three floating islands hold towers and blue cottages facing the middle, one without its roof and one in rubble, and the wizard waits on his small cloud beside the answer box](docs/screenshot.png)
+![Storm Wizard: a lightning bolt from the middle tower bursts a hailstone for 150 points. Above it, a storm crow carries 11 × 12 between two diamonds, a split cloud carries 8 + 5 over an underline, ball lightning carries 9 × 3 between dashed lines, and hailstones carry 7 × 8 and 9 + 6. Behind them, a finely drawn starry sky with a crescent moon and thin wisps. Below, three floating islands of grass, soil and layered rock with roots and vines hanging underneath hold towers and blue cottages facing the middle, one without its roof and one in rubble, and the wizard waits on his small cloud beside the answer box](docs/screenshot.png)
 
 </div>
 
@@ -36,7 +36,7 @@ Storm Wizard is an original arcade game inspired by the mechanics of Atari's 198
 
 - **Streaks and the Thunderclap.** Every three right answers in a row raise the multiplier, up to ×8. At ×4 you can spend the streak on a Thunderclap that strikes every stone in the sky at once, or keep it and keep climbing.
 - **The islands under the storm.** Three floating islands hold three towers and six cottages under a drifting cloud deck and falling rain. The Storm Wizard rides his own little cloud beside the answer box.
-- **A sky with depth.** The further away something is, the finer it's drawn: chunky pixels for the islands and cloud deck, half-size pixels for far-off islets and drifting wisps, and the screen's own pixels for the stars, the moon, distant rain and the storm clouds towering on the horizon, where sheet lightning flickers more often as the waves go on.
+- **A sky with depth.** The further away something is, the finer it's drawn: chunky pixels for the islands and cloud deck, half-size pixels for drifting wisps, and the screen's own pixels for the stars, the moon and distant rain. The islands are drawn like the sprites, with turf, soil, moonlit layers of rock, and roots and vines hanging below.
 - **Music that follows the storm.** Whimsical harp and flute in D Dorian, played live in the browser. A flute joins from wave 2, drums come in while a stone is close to landing, and the key rises every three waves. Every sound effect is in the same key. **M** turns it all off.
 - **Calm when you ask for it.** With your system's reduced-motion setting on, the screen doesn't shake or flash, and nothing on it bobs or blinks.
 - **Made to be read.** Every number uses Atkinson Hyperlegible, a typeface designed so that similar letters and digits are easy to tell apart.
