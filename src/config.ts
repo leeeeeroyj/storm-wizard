@@ -114,7 +114,6 @@ export const ARC_DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 export const BACKDROP = {
   /** Sky gradient, top to bottom, dithered between bands. */
   bands: ['#070b1c', '#0a1026', '#0e1630', '#121c3b', '#172347', '#1c2a52', '#22325d', '#283a66'],
-  stars: 50,
   /** Cloud deck drift, px/s: back and front layers. */
   cloudSpeed: [4, 9],
   rain: { drops: 70, speed: [140, 220] as const, slant: 0.25 },

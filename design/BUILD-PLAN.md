@@ -328,27 +328,20 @@ Each one ends playable, tested, committed, pushed and live.
 - **2026-11-23 The cottage is #289704** (the user's pick after playing), a blue cottage whose door faces left. The three left of the middle tower are flipped so every door faces the middle.
 - **2026-11-23 The touch keys are page elements, not canvas drawings,** so they sit beside or below the game instead of over the sky. On a touch screen the game is fitted into the room the keys leave, so nothing moves when they appear. `layoutFor` picks side columns or a bottom row, whichever leaves the game bigger; keys are 56–96 CSS px. Pressed keys turn over (light with dark ink), ⚡ is dashed and faint until ×4 and solid after, and the digits dim during a misfire's lockout. Shape and contrast, never hue alone.
 - **2026-11-23 Touch gets a way back to the title:** RESUME and TITLE buttons on the pause panel, and a TITLE button on the game-over panel. The II and speaker take a thumb-sized area around them.
+- **2026-11-23 The user's play test:** the phone was fine (small, as expected), and the iPad and computer were great. Breeze is easy enough for a beginner, and the sprites stay as they are.
+- **2026-11-23 The sky is drawn in three depths, with finer pixels further away** (the user's idea). Far layers are baked at 4 texels per design pixel, one per canvas pixel: the gradient, stars, the moon, far rain and the storm towers. Middle layers are baked at 2: the islets and wisps. The cloud deck, near rain and islands stay at 1. The storm towers are canvas arcs with a gradient, not per-pixel JavaScript, so the sky bakes in about 0.1–0.3 s on a desktop. Each tower's lit copy for the sheet lightning is baked one per frame after the scene starts. Lightning comes more often in later wave bands, and never under reduced motion; neither do the twinkling stars. The backdrop stays dark behind the white plates and stones.
 - **2026-11-22 A new banner replaces the last** (wave start, wave clear, Thunderclap), so two never overlap.
 
 ## Open questions
 
-- **Ball lightning and towers.** The user kept the current picks and will revisit them if they don't feel right in play.
+- None. (Ball lightning and towers: the user played and kept them, 2026-11-23.)
 
-## Status (2026-11-23: milestone 6 built and verified in emulation; a real phone and tablet next)
+## Status (2026-11-23: milestone 6 done, played by the user on a phone, iPad and computer; the sky redrawn in depth)
 
-- **Done:** Part A, and milestones 1–6. Milestone 5 is live at https://leeeeeroyj.github.io/storm-wizard/.
-- **Milestone 6 (touch and mobile):**
-  - **`touch.ts`:** number keys beside the game on a phone held sideways (1–5 and ⌫ left, 6–0 and ⚡ right), and a row below it on a tablet.
-  - **Pause and game over on touch:** RESUME and TITLE buttons on the pause panel, a TITLE button at game over, and bigger II and speaker targets.
-  - **The cottage:** the user's new pick, facing the middle.
+- **Done:** Part A, and milestones 1–6. Milestone 6 is live at https://leeeeeroyj.github.io/storm-wizard/.
+- **Since milestone 6:** the sky in three depths (`sky.ts`): stars, moon, far rain and storm towers with sheet lightning at canvas resolution; islets and wisps at half-pixels; the near layers unchanged.
 - **Verified:**
-  - `m6-test` 17/17 at 844×390 (side keys) and 17/17 at 1024×768 (bottom row):
-    - the layout, key sizes, and keys on screen and clear of the game;
-    - no keys on the title, in pause or at game over;
-    - typing, ⌫ and striking with the keys;
-    - ⚡ dashed then solid, and the Thunderclap;
-    - II, RESUME, the speaker, TITLE, and game over's TITLE;
-    - the cottages facing the middle.
-  - `m1`–`m5` tests 11/11, 23/23, 21/21, 35/35 and 19/19. `m2` failed once on a timing check under load and passed on both reruns.
-  - Screenshots looked at.
-- **Next:** the user tries a real phone and tablet. Then milestone 7, attract mode with the pilot, and Arcadia's demo and phone loop.
+  - `m1`–`m6` tests 11/11, 23/23, 21/21, 35/35, 19/19, and 17/17 at each of the two touch sizes.
+  - Bake time measured.
+  - Screenshots looked at: the plates and stones read clearly over the towers, and the flash fades out softly.
+- **Next:** milestone 7, attract mode with the pilot, then Arcadia's live demo and phone loop.
