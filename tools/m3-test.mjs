@@ -20,8 +20,8 @@ await tap('Enter');
 await until(() => evaluate(`__storm.scene.isActive('sky') && __storm.scene.isActive('hud')`));
 await sleep(300);
 
-const kinds = await run(`return Array.from({ length: 24 }, (_, n) => s.kindFor(n));`);
-check('the roster joins by spawn count: clouds, ball lightning and crows', ['cloud', 'ball', 'crow'].every((k) => kinds.includes(k)) && kinds.slice(0, 3).every((k) => k === 'hail'), kinds.join(' '));
+const kinds = await evaluate(`(async () => { const W = await import('/src/waves.ts'); return Array.from({ length: 12 }, (_, n) => W.kindFor(3, n)); })()`);
+check('by wave 3 the roster includes split clouds and ball lightning', ['cloud', 'ball'].every((k) => kinds.includes(k)) && kinds.slice(0, 3).every((k) => k === 'hail'), kinds.join(' '));
 
 // ---- Split cloud ----
 await setup(`${clear} ${at('cloud', fact('x', 4, 6), 120, 50)}`);

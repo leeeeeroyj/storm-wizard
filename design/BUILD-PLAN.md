@@ -318,30 +318,41 @@ Each one ends playable, tested, committed, pushed and live.
 - **2026-11-22 Plate marks outside the plate are white.** The mockup drew ball lightning's zigzag edge and the split cloud's underline in dark ink, which vanished against the night sky.
 - **2026-11-22 Plates never overlap.** Lowest stones keep their plates in place, and a plate that would cover another steps up above it (or below its stone at the top of the sky). Burst shards spread 24 px apart and stagger, and the burst cloud's fact shows above them.
 - **2026-11-22 The Thunderclap scores at the multiplier it spends,** and the twinkle and hop are twice the size. Strikes carry the multiplier from the moment of the answer, so a landing during the twinkle can't change the points.
-- **2026-11-22 Until waves arrive (milestone 4), the roster joins by spawn count:** a cloud every fourth stone from the fourth, ball lightning every fifth from the ninth, a crow every ninth from the seventh. The crow doesn't count towards the on-screen cap.
+- **2026-11-22 Until waves arrived, the roster joined by spawn count** (milestone 3 only). Milestone 4 replaced it with `waves.ts`. The crow still doesn't count towards the on-screen cap.
+- **2026-11-22 The title screen's menu.** Rows for operations, the + − range, the × ÷ range, pace, START and the grid's tabs. The arrows (D-pad or stick) move. Space (A) changes the focused item, and Enter (Start) begins from anywhere. Every item is also a click or tap target. Chosen items are filled white with dark ink, unchosen ones are outlines, and focus is a thick frame with a caret. The cursor keeps its column when moving between rows. The last operation can't be turned off; a note says why.
+- **2026-11-22 Game over waits for the player.** Retry is one press (Enter, Space, A, Start, or a tap on the panel) after a one-second guard, and Escape or B goes to the title. Attract mode still restarts by itself.
+- **2026-11-22 Escape pauses in play and leaves for the title from the pause panel.** P and Start toggle the pause, the II icon and a tap on the panel do too, and hiding the tab pauses. Pausing, quitting, wave clear and game over save the boxes.
+- **2026-11-22 The mute state lives in `synth.ts`, not in `sound.mute`.** Phaser applies `sound.mute` through a gain that only updates on the audio thread, so reading it back straight after setting it gives the old value. The toggle copied from Overtone saved the opposite of what it set. Overtone has the same code, and its fix is left to that repo.
+- **2026-11-22 A new banner replaces the last** (wave start, wave clear, Thunderclap), so two never overlap.
 
 ## Open questions
 
 - **Ball lightning and towers.** The user kept the current picks and will revisit them if they don't feel right in play.
 
-## Status (2026-11-22: milestone 3 built and verified)
+## Status (2026-11-22: milestone 4 built and verified)
 
-- **Done:** Part A, and milestones 1–3. Milestone 2 is live at https://leeeeeroyj.github.io/storm-wizard/.
-- **Milestone 3 (full roster):**
-  - **Split cloud:** drifts to mid-sky and bursts into three new stones, its fact missed and shown. Answered, it scores 100 and blasts at radius 20.
-  - **Ball lightning:** zigzags, is immune to chains, scores 150 and crackles as it arrives.
-  - **Storm Crow:** crosses high with a stretch problem from one range up. It has a pale halo, never attacks, and leaves no mark on its fact if it escapes. Answered, it scores 250 and gives a gift (Gust, Mend or Ward), each with its icon.
-  - **Gifts:** Gust slows the sky to 40% for 6 s with wind streaks. Mend rebuilds a step or scores 500. Ward puts a dome (solid and dotted arcs) over the most threatened cottage and pops on the next hit.
-  - **Thunderclap:** Space or Y at ×4. It strikes everything but the crow with a flash, a shake, a big twinkle and a D minor boom, and spends the streak.
-  - **HUD:** streak pips, and a bolt sign with the key (SPACE, Y or TAP ⚡) when the Thunderclap is ready.
-  - **Sounds:** clap, gift, ward, caw, crackle and split.
+- **Done:** Part A, and milestones 1–4. Milestone 3 is live at https://leeeeeroyj.github.io/storm-wizard/.
+- **Milestone 4 (structure):**
+  - **`waves.ts`:** count, cap, fall time, gap and the crow's place from the wave and pace. Clouds from wave 2, ball lightning from wave 3.
+  - **Waves:** a wave-start banner, the wave-clear bonus (100 per standing cottage × the multiplier), and a 2.6 s break.
+  - **Rebuilding:** every 10,000 points rebuilds the most damaged cottage.
+  - **`memory.ts`:** the Leitner boxes and the settings, versioned and checked field by field, never touched in attract mode.
+  - **The title screen:** settings that work with keyboard, mouse and controller, and the mastery grid (`mastery.ts`) with a key drawn in shapes.
+  - **Pause:** P, Esc, Start, the II icon and a hidden tab, with a panel that names the way back in and the way out for the device in hand.
+  - **Game over:** the score, NEW HIGH SCORE, the facts to practise, and retry or the title. The high score is saved.
 - **Verified:**
-  - `m3-test` 21/21:
-    - the roster ramp; the split cloud answered and burst (no prefix pair among the shards);
-    - ball lightning's zigzag and chain immunity;
-    - the crow's stretch problem, halo, gifts (Ward, Mend both ways, Gust's slowdown), chain immunity and escape;
-    - a ward absorbing a hit;
-    - the Thunderclap's gating, HUD sign, points, crow immunity and no drilling credit, and Y on a controller.
-  - `m2-test` 23/23 and `m1-test` 11/11.
-  - Screenshots looked at, which found the plate-overlap and badge problems above, now fixed.
-- **Next:** milestone 4, structure: settings on the title screen, `waves.ts`, saving the Leitner boxes with the mastery grid, wave clear and rebuilding, game over and retry, pause, and the high score.
+  - `m4-test` 35/35:
+    - waves; rebuild marks; save round trips;
+    - damaged saves and settings rejected field by field;
+    - the mastery grid's three shapes;
+    - title navigation, toggles, the keep-one rule and mouse clicks;
+    - the chosen settings reaching the game;
+    - wave clear and the next wave;
+    - rebuilding;
+    - pause by key, icon, click and hidden tab;
+    - mute remembered; boxes saved on pause;
+    - Escape to the title;
+    - game over with the high score, the retry guard and retry.
+  - `m1`–`m3` tests 11/11, 23/23 and 21/21.
+  - Screenshots looked at.
+- **Next:** milestone 5, the full music (layers, moods per wave band, title theme, stingers), every sound wired, juice and reduced motion.

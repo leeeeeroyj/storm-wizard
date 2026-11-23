@@ -40,25 +40,32 @@ Storm Wizard is an original arcade game inspired by the mechanics of Atari's 198
 
 ## How to play
 
-1. Press **START** (Enter, A on a controller, or a click or tap).
-2. Hail falls towards the cottages and towers. Read a stone's sum and type the answer. When the box matches, the bolt fires by itself.
+1. **Choose what to practise** on the title screen: any mix of + − × ÷, how big the numbers get (+ and − within 10, 20 or 100; × and ÷ tables up to 5, 10 or 12), and the pace (Breeze, Gale or Tempest). Your choices are remembered.
+2. Press **START**. Hail falls towards the cottages and towers. Read a stone's sum and type the answer. When the box matches, the bolt fires by itself.
 3. If two stones have the same answer, one answer strikes both.
 4. Right answers in a row build the multiplier (the pips beside ×1 fill towards the next step). From ×4 a bolt sign appears: press **Space** (Y on a controller) for a Thunderclap.
 5. A digit that can't lead to any answer on screen is a misfire: the box clears and the digits pause for a moment.
-6. A cottage takes two hits: first its roof, then it's rubble. A struck tower is stunned for 5 seconds and the others fire instead.
-7. The storm wins when all six cottages are rubble, and the game shows the facts to practise.
+6. A cottage takes two hits: first its roof, then it's rubble. A struck tower is stunned for 5 seconds and the others fire instead. Every 10,000 points rebuilds a cottage.
+7. Clear a wave for a bonus for every standing cottage. Each wave is longer and faster, and brings more of the storm's roster.
+8. The storm wins when all six cottages are rubble. The game shows your score, the facts to practise, and one press tries again.
 
-Waves, settings for which facts you drill, saving what you've learned, and touch controls are on the way.
+**It learns what you know.** Every fact has a box from 0 to 4. A quick right answer moves it up, and a miss sends it back to 0 and brings it round again a few stones later. Facts you're still learning come up more often. The title screen's grid shows them all: a dot for a fact you haven't met, a square that fills as you learn it, and a slash for one you missed last time. All of this stays in your browser.
+
+Touch controls are on the way.
 
 ## Controls
 
 | Action | Keyboard + mouse | Controller | Touch |
 |---|---|---|---|
-| Start | Enter or Space, or click START | A or Start | Tap START |
+| Change a setting | Arrows to move, Space to change, or click it | D-pad or stick to move, A to change | Tap it |
+| Start | Enter, or click START | Start, or A on START | Tap START |
 | Type a digit | 0–9 (top row or numpad) | Point the left stick at a digit on the arc (or step with the D-pad), then A | coming soon |
 | Delete a digit | Backspace | B | coming soon |
 | Thunderclap (at ×4 or more) | Space | Y | coming soon |
-| Sound on or off | M | Back | coming soon |
+| Pause | P or Esc, or click **II** | Start | coming soon |
+| Back to the title (paused, or after a game) | Esc | B | coming soon |
+| Try again | Enter or Space, or click the panel | A or Start | Tap the panel |
+| Sound on or off | M, or click the speaker | Back | coming soon |
 
 ## Run it locally
 
@@ -83,7 +90,10 @@ src/
   config.ts      every tunable in one place
   facts.ts       the facts, and the picker that keeps answers from being prefixes of each other
   answer.ts      the answer box's rules: match, misfire, stale prefix
-  controls.ts    the keyboard and the controller's digit arc
+  waves.ts       each wave's size, speed and roster
+  memory.ts      the saved boxes and settings, checked field by field when loaded
+  mastery.ts     the title screen's grid of what you know
+  controls.ts    the keyboard, menus and the controller's digit arc
   synth.ts       Web Audio voices; sfx.ts and music.ts play in D Dorian
   sky.ts         the sky, clouds, rain and islands, drawn in code
   islands.ts     towers, cottages and the wizard

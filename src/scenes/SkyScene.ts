@@ -1,17 +1,19 @@
 import Phaser from 'phaser';
 import { staleClear, typeDigit } from '../answer';
 import {
-  COLORS, COTTAGES_X, GIFTS, GROUND, multFor, PACE, PLAY, POINTS, RENDER_SCALE, ROSTER, TEXT, THUNDERCLAP, TOP, TOWERS_X,
+  COLORS, COTTAGES_X, GIFTS, GROUND, multFor, PLAY, POINTS, RENDER_SCALE, ROSTER, TEXT, THUNDERCLAP, TOP, TOWERS_X,
   WAND, WIDTH, WIZARD, type Gift,
 } from '../config';
 import { Controls, type Device, type Input } from '../controls';
 import { DEFAULT_SETTINGS, Picker, poolFor, type Box, type Fact, type Settings } from '../facts';
-import { loadHi } from '../hi';
+import { loadHi, saveHi } from '../hi';
 import { placeIslands, type Islands } from '../islands';
+import { loadMemory, loadSettings, saveMemory } from '../memory';
+import { crossesRebuild, kindFor, waveBonus, waveDef, type Kind, type WaveDef } from '../waves';
 import { Music } from '../music';
 import { Sfx } from '../sfx';
 import { Backdrop, mulberry32 } from '../sky';
-import { restoreMute, Synth, toggleMute } from '../synth';
+import { isMuted, restoreMute, Synth, toggleMute } from '../synth';
 import { label } from '../text';
 import { fitCamera } from '../view';
 
@@ -33,9 +35,8 @@ export interface HudState {
   /** The controller arc's digit. */
   arc: number;
   over: boolean;
+  paused: boolean;
 }
-
-export type Kind = 'hail' | 'cloud' | 'ball' | 'crow';
 
 export interface Target {
   kind: 'cottage' | 'tower';
@@ -128,10 +129,18 @@ export class SkyScene extends Phaser.Scene {
   forceGift: Gift | undefined;
   /** The spawner runs (tests switch it off to set up a sky by hand). */
   spawning = true;
-  /** Spawns so far: until waves arrive in milestone 4, the roster joins in by count. */
+  wave!: WaveDef;
+  /** Stones spawned so far this wave (the crow isn't counted). */
   spawned = 0;
-  state: 'play' | 'over' = 'play';
-  private overT = 0;
+  private crowDone = false;
+  state: 'play' | 'clear' | 'over' = 'play';
+  paused = false;
+  /** Seconds since the wave cleared or the game ended. */
+  stateT = 0;
+  /** This game set a new high score. */
+  newHi = false;
+  private overPrompt: Phaser.GameObjects.Text | undefined;
+  private leaving = false;
   private nextSpawn = 0;
   private sparks: Spark[] = [];
   private rings: Ring[] = [];
@@ -170,15 +179,20 @@ export class SkyScene extends Phaser.Scene {
     this.streak = 0;
     this.lockout = 0;
     this.gust = 0;
-    this.spawned = 0;
     this.spawning = !this.attract;
     this.state = 'play';
-    this.nextSpawn = 1.5;
+    this.paused = false;
+    this.newHi = false;
+    this.overPrompt = undefined;
+    this.leaving = false;
+    this.stateT = 0;
     this.cottages = COTTAGES_X.map(() => 0);
     this.wards = COTTAGES_X.map(() => false);
     this.stun = TOWERS_X.map(() => 0);
     this.towerFlash = TOWERS_X.map(() => 0);
-    this.picker = new Picker(poolFor(this.settings), new Map<string, Box>(), this.rand);
+    // Attract mode plays a fixed mix and remembers nothing.
+    this.settings = this.attract ? { ...DEFAULT_SETTINGS, ops: ['+', '-', 'x', '/'], pace: 'gale' } : (this.registry.get('settings') as Settings | undefined) ?? loadSettings();
+    this.picker = new Picker(poolFor(this.settings), this.attract ? new Map<string, Box>() : loadMemory(), this.rand);
     this.stretchPool = poolFor(this.settings, true);
 
     fitCamera(this, RENDER_SCALE);
@@ -198,22 +212,50 @@ export class SkyScene extends Phaser.Scene {
       this.controls = new Controls(this);
       this.music.start();
     }
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.music.stop());
+    // The HUD's II and speaker, a tap on the game-over panel, and the tab being hidden.
+    const ev = this.game.events;
+    const onPause = () => this.togglePause(), onMute = () => this.toggleMute(), onConfirm = () => this.confirm();
+    const onHidden = () => !this.paused && this.state !== 'over' && this.togglePause();
+    ev.on('storm:pause', onPause);
+    ev.on('storm:mute', onMute);
+    ev.on('storm:confirm', onConfirm);
+    ev.on(Phaser.Core.Events.HIDDEN, onHidden);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.music.stop();
+      ev.off('storm:pause', onPause);
+      ev.off('storm:mute', onMute);
+      ev.off('storm:confirm', onConfirm);
+      ev.off(Phaser.Core.Events.HIDDEN, onHidden);
+    });
 
     this.hud = {
       score: 0, hi: loadHi(), mult: 1, streak: 0, wave: 1, buffer: '', misfire: '', misfireT: 0,
-      attract: this.attract, muted: this.sound.mute, device: this.controls?.device ?? 'kbm', arc: 4, over: false,
+      attract: this.attract, muted: isMuted(), device: this.controls?.device ?? 'kbm', arc: 4, over: false, paused: false,
     };
     this.registry.set('hud', this.hud);
     this.scene.launch('hud');
+    this.startWave(1);
     this.cameras.main.fadeIn(this.attract ? 0 : 250);
+  }
+
+  /** A new wave: its numbers from `waves.ts`, and a banner. */
+  startWave(n: number) {
+    this.wave = waveDef(n, this.settings.pace);
+    this.hud.wave = n;
+    this.spawned = 0;
+    this.crowDone = false;
+    this.state = 'play';
+    this.nextSpawn = 1.2;
+    this.banner(`WAVE ${n}`, 14, 1.8);
   }
 
   update(_time: number, delta: number) {
     const dt = Math.min(0.05, delta / 1000);
+    if (this.controls) this.handleInput(this.controls.read(dt));
+    // Paused: everything holds still, the music too.
+    if (this.paused) return;
     this.playTime += dt;
     this.backdrop.update(dt);
-    if (this.controls) this.handleInput(this.controls.read(dt));
 
     this.lockout = Math.max(0, this.lockout - dt);
     this.gust = Math.max(0, this.gust - dt);
@@ -222,14 +264,19 @@ export class SkyScene extends Phaser.Scene {
       this.stun[i] = Math.max(0, this.stun[i] - dt);
       this.towerFlash[i] = Math.max(0, this.towerFlash[i] - dt);
     }
-    if (this.state === 'over') {
-      this.overT += dt;
-      if (this.overT > 5) this.leave();
-    } else this.spawnTick(dt);
+    this.stateT += dt;
+    if (this.state === 'play') this.spawnTick(dt);
+    else if (this.state === 'clear' && this.stateT > 2.6) this.startWave(this.wave.wave + 1);
+    else if (this.state === 'over') {
+      this.overPrompt?.setVisible(this.stateT > 1);
+      // Attract mode starts a new demo by itself (milestone 7 hands this to the cabinet).
+      if (this.attract && this.stateT > 4) this.scene.restart({ attract: Math.floor(this.rand() * 2 ** 31) });
+    }
 
     this.moveFoes(dt);
     this.runStrikes(dt);
     this.runBlasts(dt);
+    if (this.state === 'play') this.checkClear();
     this.tickEffects(dt);
     this.drawWorld();
     this.hud.mult = multFor(this.streak);
@@ -241,11 +288,20 @@ export class SkyScene extends Phaser.Scene {
   private handleInput(input: Input) {
     this.hud.device = input.device;
     this.hud.arc = this.controls.arc;
-    if (input.mute) {
-      toggleMute(this);
-      this.hud.muted = this.sound.mute;
+    if (input.mute) this.toggleMute();
+    if (this.state === 'over') {
+      if (input.back) this.quit();
+      else if (input.confirm || input.clap) this.confirm();
+      return;
     }
-    if (this.state !== 'play') return;
+    // Paused: Escape (or B) leaves for the title; P, Start, Enter or A resume.
+    if (this.paused) {
+      if (input.back) this.quit();
+      else if (input.pause || input.confirm) this.togglePause();
+      return;
+    }
+    if (input.pause) return this.togglePause();
+    if (this.state !== 'play' && this.state !== 'clear') return;
     for (let i = 0; i < input.undo; i++) {
       if (!this.hud.buffer) continue;
       this.hud.buffer = this.hud.buffer.slice(0, -1);
@@ -255,9 +311,36 @@ export class SkyScene extends Phaser.Scene {
     if (input.clap) this.thunderclap();
   }
 
+  toggleMute() {
+    this.hud.muted = toggleMute(this);
+  }
+
+  /** P, Start, Escape or the II icon. Pausing saves what's been learned so far. */
+  togglePause() {
+    if (this.attract || this.state === 'over') return;
+    this.paused = !this.paused;
+    this.hud.paused = this.paused;
+    this.music.held = this.paused;
+    if (this.paused) saveMemory(this.picker.memory);
+  }
+
+  /** Retry after the storm wins (Enter, Space, A, Start, or a tap on the panel). */
+  confirm() {
+    if (this.state !== 'over' || this.stateT < 1) return;
+    this.scene.restart();
+  }
+
+  /** Back to the title, keeping what's been learned and the high score. */
+  quit() {
+    if (this.attract) return;
+    saveMemory(this.picker.memory);
+    saveHi(this.hud.score);
+    this.leave();
+  }
+
   /** One digit into the answer box: it may strike, wait for more, or misfire. */
   type(d: string) {
-    if (this.state !== 'play' || this.lockout > 0) return;
+    if ((this.state !== 'play' && this.state !== 'clear') || this.lockout > 0 || this.paused) return;
     this.sfx.digit(Number(d));
     const { buffer, typed } = typeDigit(this.hud.buffer, d, this.liveAnswers());
     this.hud.buffer = buffer;
@@ -319,7 +402,7 @@ export class SkyScene extends Phaser.Scene {
       this.flash.setAlpha(0.35);
       this.cameras.main.shake(300, 0.01);
     }
-    this.popup('THUNDERCLAP!', WIDTH / 2, 70, { size: 14, color: TEXT.bolt, life: 1.2, depth: 3 });
+    this.banner('THUNDERCLAP!', 14, 1.2);
     return true;
   }
 
@@ -339,31 +422,32 @@ export class SkyScene extends Phaser.Scene {
     return list;
   }
 
-  /**
-   * Until waves arrive (milestone 4), the roster joins by spawn count: hail first, then a split cloud every fourth
-   * stone, ball lightning every fifth from the ninth, and a Storm Crow every ninth from the seventh.
-   */
-  kindFor(n: number): Kind {
-    if (n >= 6 && n % 9 === 6) return 'crow';
-    if (n >= 8 && n % 5 === 4) return 'ball';
-    if (n >= 3 && n % 4 === 3) return 'cloud';
-    return 'hail';
-  }
-
+  /** The wave's spawner: stones up to its count, never more than its cap at once, and the crow halfway through. */
   private spawnTick(dt: number) {
     if (!this.spawning) return;
-    // Milestone 3 plays wave 1's pace without end; waves come with milestone 4.
-    const pace = PACE[this.settings.pace];
-    const cap = Math.min(pace.cap, 2);
-    const gap = 3.0 * pace.gap;
+    const w = this.wave;
+    if (!this.crowDone && w.crowAt >= 0 && this.spawned >= w.crowAt) this.crowDone = !!this.spawn('crow');
     this.nextSpawn -= dt;
-    const kind = this.kindFor(this.spawned);
+    if (this.spawned >= w.count || this.nextSpawn > 0) return;
     // The crow doesn't count towards the cap: it never attacks.
-    if (this.nextSpawn > 0 || (kind !== 'crow' && this.live().filter((f) => f.kind !== 'crow').length >= cap)) return;
-    if (this.spawn(kind)) {
+    if (this.live().filter((f) => f.kind !== 'crow').length >= w.cap) return;
+    if (this.spawn(kindFor(w.wave, this.spawned))) {
       this.spawned++;
-      this.nextSpawn = kind === 'crow' ? 0.5 : gap * (0.7 + this.rand() * 0.6);
+      this.nextSpawn = w.gap * (0.7 + this.rand() * 0.6);
     } else this.nextSpawn = 0.3;
+  }
+
+  /** Every stone spawned and gone: the wave is clear. Standing cottages score a bonus, and the next wave follows. */
+  private checkClear() {
+    if (!this.spawning || this.spawned < this.wave.count || this.strikes.length) return;
+    if (this.foes.some((f) => !f.dead && f.kind !== 'crow')) return;
+    const standing = this.cottages.filter((h) => h < PLAY.cottageHits).length;
+    const bonus = waveBonus(standing, multFor(this.streak));
+    this.state = 'clear';
+    this.stateT = 0;
+    this.addScore(bonus);
+    this.banner(`WAVE ${this.wave.wave} CLEAR  +${bonus}`, 12, 2.4);
+    saveMemory(this.picker.memory);
   }
 
   spawnHail(opts: SpawnOpts = {}) {
@@ -394,7 +478,7 @@ export class SkyScene extends Phaser.Scene {
       const tx = cloud ? lerp(sx, target.x, 0.45) : target.x;
       const mul = (cloud ? ROSTER.cloud.fallMul : kind === 'ball' ? ROSTER.ball.fallMul : 1) * (opts.fallMul ?? 1);
       // A fall's time scales with its height, so every stone of a kind falls at the same speed.
-      const dur = PACE[this.settings.pace].fall * mul * ((ty - sy) / (GROUND - TOP));
+      const dur = this.wave.fall * mul * ((ty - sy) / (GROUND - TOP));
       f = { ...base, sx, sy, tx, ty, x: sx, y: sy, dur: Math.max(0.3, dur), target: cloud ? undefined : target, img: this.add.image(sx, sy, SPRITE[kind]).setDepth(4), text: this.plateText(fact, false) };
       if (kind === 'ball') this.sfx.crackle();
     }
@@ -575,23 +659,33 @@ export class SkyScene extends Phaser.Scene {
     else img.setTexture('rubble').setCrop().setY(GROUND - 6);
   }
 
+  /** The storm wins: the score, a new high score if it is one, the facts to practise, and one press to retry. */
   private gameOver() {
     this.state = 'over';
-    this.overT = 0;
+    this.stateT = 0;
     this.hud.over = true;
     this.hud.buffer = '';
     this.music.held = true;
     this.sfx.over();
-    const cx = WIDTH / 2;
-    this.add.rectangle(cx, 94, 260, 84, COLORS.bar, 0.82).setStrokeStyle(1, COLORS.line).setDepth(8);
-    label(this, cx, 58, 'The storm wins this time', 18, TEXT.bolt, { face: 'title', align: 'center' }).setDepth(8.1);
-    label(this, cx, 84, 'Facts to practise', 7, TEXT.dim, { align: 'center' }).setDepth(8.1);
-    this.picker.missedRecent.forEach((f, i) => label(this, cx, 96 + i * 12, `${f.label} = ${f.ans}`, 9, TEXT.ice, { align: 'center' }).setDepth(8.1));
+    this.newHi = saveHi(this.hud.score);
+    saveMemory(this.picker.memory);
+    const cx = WIDTH / 2, d = 8.1;
+    const panel = this.add.rectangle(cx, 100, 268, 120, COLORS.bar, 0.86).setStrokeStyle(1, COLORS.line).setDepth(8);
+    if (!this.attract) panel.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.confirm());
+    label(this, cx, 44, 'The storm wins this time', 18, TEXT.bolt, { face: 'title', align: 'center' }).setDepth(d);
+    label(this, cx, 68, `SCORE ${this.hud.score.toLocaleString('en-US')}   WAVE ${this.wave.wave}`, 8, TEXT.ink, { align: 'center' }).setDepth(d);
+    if (this.newHi) label(this, cx, 79, 'NEW HIGH SCORE', 7, TEXT.bolt, { align: 'center' }).setDepth(d);
+    const facts = this.picker.missedRecent;
+    label(this, cx, 92, facts.length ? 'Facts to practise' : 'No facts missed. Well done!', 7, TEXT.dim, { align: 'center' }).setDepth(d);
+    facts.forEach((f, i) => label(this, cx, 103 + i * 11, `${f.label} = ${f.ans}`, 9, TEXT.ice, { align: 'center' }).setDepth(d));
+    const dev = this.hud.device;
+    const prompt = dev === 'pad' ? 'A TO TRY AGAIN   B FOR THE TITLE' : dev === 'touch' ? 'TAP TO TRY AGAIN' : 'ENTER TO TRY AGAIN   ESC FOR THE TITLE';
+    this.overPrompt = label(this, cx, 146, this.attract ? '' : prompt, 7, TEXT.ink, { align: 'center' }).setDepth(d).setVisible(false);
   }
 
   private leave() {
-    if (this.overT < 0) return;
-    this.overT = -1e9;
+    if (this.leaving) return;
+    this.leaving = true;
     this.cameras.main.fadeOut(400);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       this.scene.stop('hud');
@@ -602,9 +696,29 @@ export class SkyScene extends Phaser.Scene {
   // ---- Effects ----
 
   private score(n: number, x: number, y: number, text = String(n)) {
+    this.addScore(n);
+    this.popup(text, x, Math.max(TOP + 12, y), { size: 6, color: TEXT.ink, life: 0.8, rise: 6, depth: 7 });
+  }
+
+  /** Adds points. Every 10,000 rebuilds the most damaged cottage. */
+  addScore(n: number) {
+    const before = this.hud.score;
     this.hud.score += n;
     this.hud.hi = Math.max(this.hud.hi, this.hud.score);
-    this.popup(text, x, Math.max(TOP + 12, y), { size: 6, color: TEXT.ink, life: 0.8, rise: 6, depth: 7 });
+    if (!crossesRebuild(before, this.hud.score)) return;
+    const worst = this.cottages.reduce((b, hits, i) => (hits > this.cottages[b] ? i : b), 0);
+    if (this.cottages[worst] === 0) return;
+    this.cottages[worst] = 0;
+    this.drawCottage(worst);
+    this.popup('REBUILT', COTTAGES_X[worst], GROUND - 30, { size: 7, color: TEXT.ink, life: 1.4, rise: 4, depth: 7 });
+  }
+
+  /** A big line across the sky (a wave starting or clearing, the Thunderclap). A new one replaces the last. */
+  private banner(str: string, size: number, life: number) {
+    const last = this.popups.find((p) => p.text.getData('banner'));
+    if (last) last.life = 0;
+    this.popup(str, WIDTH / 2, 86, { size, color: TEXT.bolt, life, depth: 3 });
+    this.popups[this.popups.length - 1].text.setData('banner', true);
   }
 
   private popup(str: string, x: number, y: number, o: { size: number; color: string; life: number; rise?: number; depth: number; icon?: Gift }) {

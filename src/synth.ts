@@ -33,7 +33,7 @@ export class Synth {
   readonly ctx: AudioContext | undefined;
   private readonly out: AudioNode | undefined;
 
-  constructor(private readonly scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene) {
     const sound = scene.sound;
     if (sound instanceof Phaser.Sound.WebAudioSoundManager) {
       this.ctx = sound.context;
@@ -61,7 +61,7 @@ export class Synth {
 
   /** Running and not muted: sounds will be heard. */
   get live() {
-    return this.running && !this.scene.sound.mute;
+    return this.running && !muted;
   }
 
   /** The audio clock, s. */
@@ -159,19 +159,29 @@ export class Synth {
 }
 
 /** Sound starts on unless it was switched off last visit. */
+/**
+ * Whether sound is off. Kept here rather than read back from `sound.mute`: Phaser applies that through a gain that
+ * only updates on the audio thread, so reading it straight after setting it gives the old value.
+ */
+let muted = false;
+export const isMuted = () => muted;
+
 export function restoreMute(scene: Phaser.Scene) {
   try {
-    scene.sound.mute = localStorage.getItem(MUTE_STORAGE) === '1';
+    muted = localStorage.getItem(MUTE_STORAGE) === '1';
   } catch {
     // Storage blocked: sound stays on.
   }
+  scene.sound.mute = muted;
 }
 
 export function toggleMute(scene: Phaser.Scene) {
-  scene.sound.mute = !scene.sound.mute;
+  muted = !muted;
+  scene.sound.mute = muted;
   try {
-    localStorage.setItem(MUTE_STORAGE, scene.sound.mute ? '1' : '0');
+    localStorage.setItem(MUTE_STORAGE, muted ? '1' : '0');
   } catch {
     // Storage blocked: the setting lasts for this visit only.
   }
+  return muted;
 }

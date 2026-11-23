@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ANSWER_BOX, ARC, ARC_DIGITS, COLORS, HUD_SCALE, TEXT, THUNDERCLAP, TOP, WIDTH } from '../config';
+import { ANSWER_BOX, ARC, ARC_DIGITS, COLORS, HEIGHT, HUD_SCALE, TEXT, THUNDERCLAP, TOP, WIDTH } from '../config';
 import { label } from '../text';
 import { fitCamera } from '../view';
 import type { HudState } from './SkyScene';
@@ -9,7 +9,10 @@ const U = HUD_SCALE;
 const W = WIDTH * U;
 const BAR = TOP * U;
 
-/** The top bar and the answer box, drawn from the registry's `hud` state. */
+/**
+ * The top bar, the answer box, the controller's digit arc and the pause panel, drawn from the registry's `hud` state.
+ * Its II and speaker icons are buttons too: they tell the game through `storm:pause` and `storm:mute`.
+ */
 export class HudScene extends Phaser.Scene {
   private g!: Phaser.GameObjects.Graphics;
   private score!: Phaser.GameObjects.Text;
@@ -19,6 +22,9 @@ export class HudScene extends Phaser.Scene {
   private answer!: Phaser.GameObjects.Text;
   private clapKey!: Phaser.GameObjects.Text;
   private arc: Phaser.GameObjects.Text[] = [];
+  private veil!: Phaser.GameObjects.Graphics;
+  private pauseTitle!: Phaser.GameObjects.Text;
+  private pauseHint!: Phaser.GameObjects.Text;
   private clock = 0;
 
   constructor() {
@@ -41,6 +47,19 @@ export class HudScene extends Phaser.Scene {
     this.arc = ARC_DIGITS.map((d, i) => {
       const { x, y } = arcPoint(i);
       return t(x * U, (y - 4.5) * U, 14, TEXT.ink, 'center').setText(d).setStroke(TEXT.plateInk, 4);
+    });
+    this.veil = this.add.graphics().setDepth(3);
+    this.pauseTitle = t(W / 2, 170, 32, TEXT.bolt, 'center').setText('PAUSED').setDepth(4);
+    this.pauseHint = t(W / 2, 216, 14, TEXT.ink, 'center').setDepth(4);
+
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      const s = this.registry.get('hud') as HudState | undefined;
+      if (!s || s.attract) return;
+      const x = p.worldX, y = p.worldY;
+      if (y < BAR + 8 && x >= W - 62 && x < W - 36) this.game.events.emit('storm:pause');
+      else if (y < BAR + 8 && x >= W - 34) this.game.events.emit('storm:mute');
+      // A tap anywhere on the pause panel resumes.
+      else if (s.paused) this.game.events.emit('storm:pause');
     });
   }
 
@@ -95,6 +114,15 @@ export class HudScene extends Phaser.Scene {
     if (showArc) {
       const { x, y } = arcPoint(s.arc);
       g.fillStyle(COLORS.plate, 1).fillRect((x - 5) * U, (y - 5) * U, 10 * U, 10 * U);
+    }
+
+    // Paused: the sky dims under a panel with the way back in and the way out, for the device in hand.
+    const v = this.veil.clear();
+    this.pauseTitle.setVisible(s.paused);
+    this.pauseHint.setVisible(s.paused);
+    if (s.paused) {
+      v.fillStyle(COLORS.night, 0.72).fillRect(0, BAR + U, W, HEIGHT * U - BAR - U);
+      this.pauseHint.setText(s.device === 'pad' ? 'START TO RESUME    B FOR THE TITLE' : s.device === 'touch' ? 'TAP TO RESUME' : 'P TO RESUME    ESC FOR THE TITLE');
     }
   }
 }

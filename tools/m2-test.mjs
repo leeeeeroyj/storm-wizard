@@ -174,7 +174,9 @@ await until(() => run(`return s.state === 'over';`), 5000);
 await sleep(400);
 await shot('7-over');
 check('when every cottage is rubble, the storm wins', await run(`return s.hud.over && s.picker.missedRecent.length > 0;`));
-await until(() => evaluate(`__storm.scene.isActive('title')`), 30000);
-check('and the game returns to the title', true);
+await until(() => run(`return s.stateT > 1.1;`), 5000);
+await tap('Escape');
+await until(() => evaluate(`__storm.scene.isActive('title')`), 10000);
+check('and Escape returns to the title', true);
 
 done();
