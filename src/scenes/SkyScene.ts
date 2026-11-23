@@ -9,6 +9,7 @@ import { DEFAULT_SETTINGS, Picker, poolFor, type Box, type Fact, type Settings }
 import { loadHi, saveHi } from '../hi';
 import { placeIslands, type Islands } from '../islands';
 import { loadMemory, loadSettings, saveMemory } from '../memory';
+import { bandFor } from '../tune';
 import { crossesRebuild, kindFor, waveBonus, waveDef, type Kind, type WaveDef } from '../waves';
 import { Music } from '../music';
 import { Sfx } from '../sfx';
@@ -147,6 +148,8 @@ export class SkyScene extends Phaser.Scene {
   private puffs: Puff[] = [];
   private popups: Popup[] = [];
   private towerFlash: number[] = [];
+  /** A twinkle over a cottage: when a wave clears with it standing, or it's rebuilt. */
+  private cottageGlow: number[] = [];
   private flash!: Phaser.GameObjects.Rectangle;
   private rand: () => number = Math.random;
   private fx!: Phaser.GameObjects.Graphics;
@@ -190,6 +193,7 @@ export class SkyScene extends Phaser.Scene {
     this.wards = COTTAGES_X.map(() => false);
     this.stun = TOWERS_X.map(() => 0);
     this.towerFlash = TOWERS_X.map(() => 0);
+    this.cottageGlow = COTTAGES_X.map(() => 0);
     // Attract mode plays a fixed mix and remembers nothing.
     this.settings = this.attract ? { ...DEFAULT_SETTINGS, ops: ['+', '-', 'x', '/'], pace: 'gale' } : (this.registry.get('settings') as Settings | undefined) ?? loadSettings();
     this.picker = new Picker(poolFor(this.settings), this.attract ? new Map<string, Box>() : loadMemory(), this.rand);
@@ -264,6 +268,7 @@ export class SkyScene extends Phaser.Scene {
       this.stun[i] = Math.max(0, this.stun[i] - dt);
       this.towerFlash[i] = Math.max(0, this.towerFlash[i] - dt);
     }
+    for (let i = 0; i < this.cottageGlow.length; i++) this.cottageGlow[i] = Math.max(0, this.cottageGlow[i] - dt);
     this.stateT += dt;
     if (this.state === 'play') this.spawnTick(dt);
     else if (this.state === 'clear' && this.stateT > 2.6) this.startWave(this.wave.wave + 1);
@@ -281,6 +286,16 @@ export class SkyScene extends Phaser.Scene {
     this.drawWorld();
     this.hud.mult = multFor(this.streak);
     this.hud.streak = this.streak;
+    this.tuneMusic();
+  }
+
+  /** The music follows the storm: the flute from wave 2, drums while a stone is low, a new key every three waves. */
+  private tuneMusic() {
+    const lowest = this.foes.reduce((m, f) => (f.dead || f.doomed || !f.target ? m : Math.max(m, f.p)), 0);
+    const st = this.music.state;
+    st.danger = this.state === 'play' && lowest > 0.55;
+    st.lead = this.wave.wave >= 2;
+    st.band = bandFor(this.wave.wave);
   }
 
   // ---- Input ----
@@ -321,6 +336,7 @@ export class SkyScene extends Phaser.Scene {
     this.paused = !this.paused;
     this.hud.paused = this.paused;
     this.music.held = this.paused;
+    this.sfx.pause(this.paused);
     if (this.paused) saveMemory(this.picker.memory);
   }
 
@@ -446,6 +462,8 @@ export class SkyScene extends Phaser.Scene {
     this.state = 'clear';
     this.stateT = 0;
     this.addScore(bonus);
+    this.sfx.clear();
+    this.cottages.forEach((h, i) => h < PLAY.cottageHits && (this.cottageGlow[i] = 0.5 + i * 0.08));
     this.banner(`WAVE ${this.wave.wave} CLEAR  +${bonus}`, 12, 2.4);
     saveMemory(this.picker.memory);
   }
@@ -639,6 +657,11 @@ export class SkyScene extends Phaser.Scene {
       this.cottages[t.i] = hits;
       this.drawCottage(t.i);
       this.sfx.land(lost);
+      // A cottage flattened: a bigger burst and a shockwave.
+      if (lost) {
+        this.burst(t.x, GROUND - 6, COLORS.dim, 16);
+        this.rings.push({ x: t.x, y: GROUND - 6, r: 4, dr: 60, life: 0.45 });
+      }
     } else {
       this.stun[t.i] = PLAY.stun;
       this.sfx.land();
@@ -668,6 +691,7 @@ export class SkyScene extends Phaser.Scene {
     this.music.held = true;
     this.sfx.over();
     this.newHi = saveHi(this.hud.score);
+    if (this.newHi) this.time.delayedCall(1300, () => this.sfx.newHi());
     saveMemory(this.picker.memory);
     const cx = WIDTH / 2, d = 8.1;
     const panel = this.add.rectangle(cx, 100, 268, 120, COLORS.bar, 0.86).setStrokeStyle(1, COLORS.line).setDepth(8);
@@ -710,6 +734,8 @@ export class SkyScene extends Phaser.Scene {
     if (this.cottages[worst] === 0) return;
     this.cottages[worst] = 0;
     this.drawCottage(worst);
+    this.cottageGlow[worst] = 0.8;
+    this.sfx.rebuilt();
     this.popup('REBUILT', COTTAGES_X[worst], GROUND - 30, { size: 7, color: TEXT.ink, life: 1.4, rise: 4, depth: 7 });
   }
 
@@ -838,6 +864,9 @@ export class SkyScene extends Phaser.Scene {
     this.towerFlash.forEach((life, i) => {
       if (life > 0) this.star(t, TOWERS_X[i], TOWER_TOP, 2 + life * 20, COLORS.bolt);
     });
+    this.cottageGlow.forEach((life, i) => {
+      if (life > 0) this.star(t, COTTAGES_X[i], GROUND - 20, 1 + Math.sin(Math.min(1, life / 0.5) * Math.PI) * 3, COLORS.ink);
+    });
   }
 
   /**
@@ -890,7 +919,7 @@ export class SkyScene extends Phaser.Scene {
   private drawWizard() {
     const wiz = this.islands.wizard;
     const c = this.cast;
-    const bob = Math.round(Math.sin(this.playTime * 1.6) * 0.6);
+    const bob = REDUCED ? 0 : Math.round(Math.sin(this.playTime * 1.6) * 0.6);
     let dx = 0, dy = bob;
     if (c?.kind === 'twinkle') dy -= c.big ? 2 : 1;
     if (c?.kind === 'fizzle') dx = Math.floor(c.t / 0.05) % 2 ? 1 : -1;

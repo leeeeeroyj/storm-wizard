@@ -100,6 +100,42 @@ export class Sfx {
     this.synth.noise(0.08, 0.35, 'bandpass', 700, undefined, 2);
   }
 
+  /** A wave cleared: a bright rising phrase. */
+  clear() {
+    const t = this.synth.now;
+    [62, 65, 69, 72, 76, 74].forEach((m, i) => this.pluck(m, 0.1, 0.8, t + i * 0.11));
+  }
+
+  /** A new high score: a fanfare on D. */
+  newHi() {
+    const t = this.synth.now;
+    [62, 69, 74, 78, 81].forEach((m, i) => this.pluck(m, 0.11, i === 4 ? 1.4 : 0.5, t + i * 0.09));
+    this.synth.voice('sine', hz(86), hz(86), 1.2, 0.03, t + 0.36);
+  }
+
+  /** A cottage rebuilt: three soft rising notes. */
+  rebuilt() {
+    const t = this.synth.now;
+    [69, 74, 78].forEach((m, i) => this.pluck(m, 0.08, 0.5, t + i * 0.08));
+  }
+
+  /** Pausing falls a fifth; resuming rises. */
+  pause(on: boolean) {
+    this.synth.voice('sine', on ? 660 : 440, on ? 440 : 660, 0.1, 0.06);
+  }
+
+  /** A step through a menu. */
+  step() {
+    this.pluck(74, 0.04, 0.12);
+  }
+
+  /** A menu choice made. */
+  choose() {
+    const t = this.synth.now;
+    this.pluck(74, 0.06, 0.2, t);
+    this.pluck(81, 0.05, 0.3, t + 0.05);
+  }
+
   /** The storm wins: a falling phrase. */
   over() {
     const t = this.synth.now;

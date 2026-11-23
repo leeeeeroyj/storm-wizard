@@ -1,16 +1,11 @@
 import { hz } from './sfx';
 import type { Synth } from './synth';
+import { BPM, notesAt, STEPS_PER_BAR, type Inst, type TuneState } from './tune';
 
 // A lookahead sequencer on the audio clock: a 25 ms timer schedules every note 120 ms ahead, so timing never depends
-// on the frame rate. Milestone 2's calm layer: harp arpeggios over Dm–G–C–Am, a soft pad and a triangle bass.
+// on the frame rate. `tune.ts` says what plays; this voices it.
 
-const BPM = 110;
-/** One step is an eighth note. */
-const STEP = 60 / BPM / 2;
 const LOOKAHEAD = 0.12;
-/** Dm, G, C, Am: [bass, three chord tones]. The G's B natural is the Dorian colour. */
-const CHORDS = [[38, 62, 65, 69], [43, 55, 59, 62], [36, 60, 64, 67], [45, 57, 60, 64]];
-const ARP = [0, 1, 2, 3, 2, 1, 2, 3];
 const VOLUME = 0.55;
 
 export class Music {
@@ -19,8 +14,16 @@ export class Music {
   private timer: ReturnType<typeof setInterval> | undefined;
   /** Holds the music (pause, game over). */
   held = false;
+  /** What the game wants now. `danger` takes effect at the next bar line. */
+  readonly state: TuneState = { lead: false, danger: false, band: 0 };
+  private latchedDanger = false;
+  private readonly stepSecs: number;
 
-  constructor(private readonly synth: Synth) {}
+  constructor(private readonly synth: Synth, mode: 'game' | 'title' = 'game') {
+    this.stepSecs = 60 / BPM[mode] / 2;
+    // The title theme is the flute line over the calm layer, slower.
+    if (mode === 'title') this.state.lead = true;
+  }
 
   start() {
     this.stop();
@@ -34,6 +37,11 @@ export class Music {
     this.timer = undefined;
   }
 
+  /** Notes scheduled so far, for tests. */
+  get steps() {
+    return this.step;
+  }
+
   private tick() {
     const s = this.synth;
     // Locked, suspended or held: keep the clock just ahead, so it resumes cleanly.
@@ -43,25 +51,41 @@ export class Music {
     }
     if (this.next < s.now) this.next = s.now + 0.05;
     while (this.next < s.now + LOOKAHEAD) {
-      this.schedule(this.step++, this.next);
-      this.next += STEP;
+      if (this.step % STEPS_PER_BAR === 0) this.latchedDanger = this.state.danger;
+      for (const n of notesAt(this.step, { ...this.state, danger: this.latchedDanger })) this.voice(n.inst, n.midi, n.steps * this.stepSecs, this.next);
+      this.step++;
+      this.next += this.stepSecs;
     }
   }
 
-  private schedule(step: number, t: number) {
-    const s = this.synth;
-    const inBar = step % 8;
-    const [bass, ...tones] = CHORDS[Math.floor(step / 8) % CHORDS.length];
-    const v = VOLUME;
-    if (inBar === 0) {
-      for (const m of tones) {
-        for (const detune of [0.997, 1.003]) s.voice('sawtooth', hz(m) * detune, hz(m) * detune, STEP * 8, 0.012 * v, t, { attack: 0.4, cutoff: [900, 500] });
-      }
+  private voice(inst: Inst, m: number, dur: number, t: number) {
+    const s = this.synth, v = VOLUME, f = hz(m);
+    switch (inst) {
+      case 'pad':
+        for (const d of [0.997, 1.003]) s.voice('sawtooth', f * d, f * d, dur, 0.012 * v, t, { attack: 0.4, cutoff: [900, 500] });
+        break;
+      case 'arp':
+        s.voice('triangle', f, f, 0.7, 0.05 * v, t, { cutoff: [3500, 800] });
+        s.voice('sine', f * 2, f * 2, 0.35, 0.017 * v, t);
+        break;
+      case 'bass':
+        s.voice('triangle', f, f, dur, 0.1 * v, t);
+        break;
+      case 'flute':
+        s.voice('sine', f, f, dur * 0.95, 0.05 * v, t, { attack: 0.06, vibrato: 12 });
+        break;
+      case 'kick':
+        s.voice('sine', 130, 45, 0.22, 0.3 * v, t);
+        break;
+      case 'snare':
+        s.noise(0.08 * v, 0.12, 'bandpass', 1800, t);
+        break;
+      case 'hat':
+        s.hat(0.025 * v, t, 0.03);
+        break;
+      case 'rumble':
+        s.noise(0.05 * v, dur, 'lowpass', 120, t);
+        break;
     }
-    const arp = [...tones, tones[0] + 12];
-    const m = arp[ARP[inBar]] + 12;
-    s.voice('triangle', hz(m), hz(m), 0.7, 0.05 * v, t, { cutoff: [3500, 800] });
-    s.voice('sine', hz(m + 12), hz(m + 12), 0.35, 0.017 * v, t);
-    if (inBar === 0 || inBar === 4) s.voice('triangle', hz(bass), hz(bass), STEP * 3, 0.1 * v, t);
   }
 }

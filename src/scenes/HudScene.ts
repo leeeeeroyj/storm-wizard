@@ -8,6 +8,7 @@ import type { HudState } from './SkyScene';
 const U = HUD_SCALE;
 const W = WIDTH * U;
 const BAR = TOP * U;
+const REDUCED = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
 /**
  * The top bar, the answer box, the controller's digit arc and the pause panel, drawn from the registry's `hud` state.
@@ -107,7 +108,7 @@ export class HudScene extends Phaser.Scene {
     // A misfire: the box goes dark and the digits that missed are struck through.
     g.fillStyle(misfired ? COLORS.panel : COLORS.plate, 1).fillRect(bx, by, bw, bh);
     if (misfired) g.fillStyle(COLORS.dim, 1).fillRect(W / 2 - this.answer.width / 2 - 2, by + bh / 2, this.answer.width + 4, 2);
-    else if (!s.attract && !s.over && Math.floor(this.clock * 2) % 2 === 0) {
+    else if (!s.attract && !s.over && (REDUCED || Math.floor(this.clock * 2) % 2 === 0)) {
       const cx = W / 2 + this.answer.width / 2 + 2;
       g.fillStyle(COLORS.plateInk, 1).fillRect(cx, by + 6, 2, bh - 12);
     }

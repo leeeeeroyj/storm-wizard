@@ -8,11 +8,14 @@ import { placeIslands } from '../islands';
 import { masteryFor, type Cell } from '../mastery';
 import { loadMemory, loadSettings, saveSettings } from '../memory';
 import { Backdrop } from '../sky';
-import { restoreMute } from '../synth';
+import { Music } from '../music';
+import { Sfx } from '../sfx';
+import { restoreMute, Synth } from '../synth';
 import { label } from '../text';
 import { fitCamera } from '../view';
 
 const OPS: Op[] = ['+', '-', 'x', '/'];
+const REDUCED = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 const ADD_RANGES = [10, 20, 100] as const;
 const MUL_RANGES = [5, 10, 12] as const;
 const PACES = Object.keys(PACE) as Pace[];
@@ -64,6 +67,8 @@ export class TitleScene extends Phaser.Scene {
   private warnT = 0;
   private leaving = false;
   private clock = 0;
+  private sfx!: Sfx;
+  private music!: Music;
 
   constructor() {
     super('title');
@@ -90,6 +95,12 @@ export class TitleScene extends Phaser.Scene {
     this.add.graphics().setDepth(4).fillStyle(COLORS.night, 0.55).fillRect(0, 0, WIDTH, HEIGHT);
     this.cameras.main.fadeIn(250);
     this.controls = new Controls(this);
+    const synth = new Synth(this);
+    this.sfx = new Sfx(synth);
+    // The title theme: the flute line over the calm layer, slower. It starts once a key or click unlocks audio.
+    this.music = new Music(synth, 'title');
+    this.music.start();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.music.stop());
 
     const cx = WIDTH / 2;
     label(this, cx, 2, 'Storm Wizard', 38, TEXT.bolt, { face: 'title', align: 'center' }).setDepth(5);
@@ -150,6 +161,7 @@ export class TitleScene extends Phaser.Scene {
     this.focus = r;
     this.cursor = i;
     this.rows[r].act(i);
+    this.sfx.choose();
     if (this.leaving) return;
     saveSettings(this.settings);
     this.refresh();
@@ -173,6 +185,7 @@ export class TitleScene extends Phaser.Scene {
     const padA = input.confirm && input.device === 'pad' && !input.pause;
     if (input.confirm && !padA) this.begin();
     else if (padA || input.clap) this.activate(this.focus, this.cursor);
+    if (input.navY || (input.navX && !this.rows[this.focus].select)) this.sfx.step();
     if (input.navY) {
       this.focus = (this.focus + input.navY + this.rows.length) % this.rows.length;
       const r = this.rows[this.focus];
@@ -194,7 +207,7 @@ export class TitleScene extends Phaser.Scene {
     this.padStatus.setText(pad ? 'CONTROLLER CONNECTED' : 'USING A CONTROLLER? PRESS ANY BUTTON ON IT').setColor(pad ? TEXT.ice : TEXT.dim);
     // The START button breathes.
     const start = this.texts.find((t) => t.text === 'START');
-    start?.setAlpha(this.clock % 1 < 0.6 ? 1 : 0.6);
+    if (!REDUCED) start?.setAlpha(this.clock % 1 < 0.6 ? 1 : 0.6);
   }
 
   /** Redraws the panels, the options (chosen ones filled, the focused one outlined and marked), and the grid. */

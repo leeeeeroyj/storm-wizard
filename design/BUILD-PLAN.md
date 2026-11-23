@@ -323,36 +323,39 @@ Each one ends playable, tested, committed, pushed and live.
 - **2026-11-22 Game over waits for the player.** Retry is one press (Enter, Space, A, Start, or a tap on the panel) after a one-second guard, and Escape or B goes to the title. Attract mode still restarts by itself.
 - **2026-11-22 Escape pauses in play and leaves for the title from the pause panel.** P and Start toggle the pause, the II icon and a tap on the panel do too, and hiding the tab pauses. Pausing, quitting, wave clear and game over save the boxes.
 - **2026-11-22 The mute state lives in `synth.ts`, not in `sound.mute`.** Phaser applies `sound.mute` through a gain that only updates on the audio thread, so reading it back straight after setting it gives the old value. The toggle copied from Overtone saved the opposite of what it set. Overtone has the same code, and its fix is left to that repo.
+- **2026-11-22 The music is composed in a pure `tune.ts`** (notes per step, given the lead, danger and band) and voiced by `music.ts`, so tests check the composition without audio. Danger is latched at bar lines.
+- **2026-11-22 Under reduced motion the wizard's twinkle-hop stays;** it's part of answering and only 1–2 px. The idle bob, the START pulse and the cursor blink stop, along with shake and flash.
 - **2026-11-22 A new banner replaces the last** (wave start, wave clear, Thunderclap), so two never overlap.
 
 ## Open questions
 
 - **Ball lightning and towers.** The user kept the current picks and will revisit them if they don't feel right in play.
 
-## Status (2026-11-22: milestone 4 built and verified)
+## Status (2026-11-22: milestone 5 built and verified)
 
-- **Done:** Part A, and milestones 1–4. Milestone 3 is live at https://leeeeeroyj.github.io/storm-wizard/.
-- **Milestone 4 (structure):**
-  - **`waves.ts`:** count, cap, fall time, gap and the crow's place from the wave and pace. Clouds from wave 2, ball lightning from wave 3.
-  - **Waves:** a wave-start banner, the wave-clear bonus (100 per standing cottage × the multiplier), and a 2.6 s break.
-  - **Rebuilding:** every 10,000 points rebuilds the most damaged cottage.
-  - **`memory.ts`:** the Leitner boxes and the settings, versioned and checked field by field, never touched in attract mode.
-  - **The title screen:** settings that work with keyboard, mouse and controller, and the mastery grid (`mastery.ts`) with a key drawn in shapes.
-  - **Pause:** P, Esc, Start, the II icon and a hidden tab, with a panel that names the way back in and the way out for the device in hand.
-  - **Game over:** the score, NEW HIGH SCORE, the facts to practise, and retry or the title. The high score is saved.
+- **Done:** Part A, and milestones 1–5. Milestone 4 is live at https://leeeeeroyj.github.io/storm-wizard/.
+- **Milestone 5 (music and feedback):**
+  - **`tune.ts` and `music.ts`:**
+    - the calm layer;
+    - the flute lead from wave 2;
+    - the danger layer (kick, snare, hats, rumble) while a stone is past 55%, switching at bar lines;
+    - G Dorian for waves 4–6 and A Dorian with a busier arpeggio from wave 7;
+    - the title theme at 92 BPM.
+  - **New sounds:**
+    - wave-clear and new-high-score stingers (the fanfare 1.3 s after the game-over phrase);
+    - rebuilt, pause and resume;
+    - menu step and choose.
+  - **Feedback:**
+    - twinkles over standing cottages at wave clear and over a rebuilt one;
+    - a bigger burst and a shockwave when a cottage is flattened.
+  - **Reduced motion:** no shake or flash, fewer sparks, steady chevrons, cursor and START, and a still wizard.
 - **Verified:**
-  - `m4-test` 35/35:
-    - waves; rebuild marks; save round trips;
-    - damaged saves and settings rejected field by field;
-    - the mastery grid's three shapes;
-    - title navigation, toggles, the keep-one rule and mouse clicks;
-    - the chosen settings reaching the game;
-    - wave clear and the next wave;
-    - rebuilding;
-    - pause by key, icon, click and hidden tab;
-    - mute remembered; boxes saved on pause;
-    - Escape to the title;
-    - game over with the high score, the retry guard and retry.
-  - `m1`–`m3` tests 11/11, 23/23 and 21/21.
+  - `m5-test` 19/19:
+    - the tune's layers, lead, danger, bands and busy arpeggio;
+    - the title theme running and the menu sounds;
+    - the game's music state following danger, wave 2 and wave 4;
+    - pause, clear, rebuild, game-over and new-high-score sounds, and the music holding at game over;
+    - reduced motion.
+  - `m1`–`m4` tests 11/11, 23/23, 21/21 and 35/35.
   - Screenshots looked at.
-- **Next:** milestone 5, the full music (layers, moods per wave band, title theme, stingers), every sound wired, juice and reduced motion.
+- **Next:** milestone 6, touch and mobile. Number keys in the letterbox bars at 844×390, a bottom row on 4:3 screens, II and speaker tap targets, the CDP touch test at two phone sizes, then a real phone (needs the user).

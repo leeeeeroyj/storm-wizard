@@ -36,6 +36,8 @@ Storm Wizard is an original arcade game inspired by the mechanics of Atari's 198
 
 - **Streaks and the Thunderclap.** Every three right answers in a row raise the multiplier, up to ×8. At ×4 you can spend the streak on a Thunderclap that strikes every stone in the sky at once, or keep it and keep climbing.
 - **The islands under the storm.** Three floating islands hold three towers and six cottages under a drifting cloud deck and falling rain. The Storm Wizard rides his own little cloud beside the answer box.
+- **Music that follows the storm.** Whimsical harp and flute in D Dorian, played live in the browser. A flute joins from wave 2, drums come in while a stone is close to landing, and the key rises every three waves. Every sound effect is in the same key. **M** turns it all off.
+- **Calm when you ask for it.** With your system's reduced-motion setting on, the screen doesn't shake or flash, and nothing on it bobs or blinks.
 - **Made to be read.** Every number uses Atkinson Hyperlegible, a typeface designed so that similar letters and digits are easy to tell apart.
 
 ## How to play
@@ -95,6 +97,7 @@ src/
   mastery.ts     the title screen's grid of what you know
   controls.ts    the keyboard, menus and the controller's digit arc
   synth.ts       Web Audio voices; sfx.ts and music.ts play in D Dorian
+  tune.ts        the music as notes: layers, the flute line, a key per wave band
   sky.ts         the sky, clouds, rain and islands, drawn in code
   islands.ts     towers, cottages and the wizard
   scenes/        Title, Sky (the game) and Hud
