@@ -14,7 +14,7 @@ An arcade math game: hail falls on the sky islands, and every stone carries a su
 ![Vite](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-![Storm Wizard: a wizard stands on the centre tower of three floating islands under a rainy night sky, with six cottages and two more towers along the islands and the answer box below](docs/screenshot.png)
+![Storm Wizard: a lightning bolt from the left tower bursts a hailstone under the cloud deck, while the wizard waits on his small cloud beside the answer box, below three floating islands with cottages and towers](docs/screenshot.png)
 
 </div>
 
@@ -22,18 +22,31 @@ An arcade math game: hail falls on the sky islands, and every stone carries a su
 
 Storm Wizard is an original arcade game inspired by the mechanics of Atari's 1980 arcade game *Missile Command*, rebuilt to drill the four math operations. The game is being built in the open; this is how it plays today.
 
-- **The islands under the storm.** Three floating islands hold three towers and six cottages, with the Storm Wizard on the centre tower, under a drifting cloud deck and falling rain.
+- **Type the answer, strike the hail.** Every hailstone carries a sum on a white plate. Type its answer and the wizard's wand twinkles, then the nearest tower's lightning bolt bursts it. There's no Enter key: the bolt fires the moment the number is right.
+- **Mistakes teach.** A wrong digit fizzles (the wand puffs smoke and the box clears). A stone that gets through shows its whole fact, like `7 × 8 = 56`, big over the impact, and that fact comes back a few stones later.
+- **Chains.** A blast catches any stone that drifts into it.
+- **The islands under the storm.** Three floating islands hold three towers and six cottages under a drifting cloud deck and falling rain. The Storm Wizard rides his own little cloud beside the answer box.
 - **Made to be read.** Every number uses Atkinson Hyperlegible, a typeface designed so that similar letters and digits are easy to tell apart.
 
 ## How to play
 
-Press **START** (Enter, A on a controller, or a click or tap) to go from the title to the islands. The hail, the answers and the lightning come next.
+1. Press **START** (Enter, A on a controller, or a click or tap).
+2. Hail falls towards the cottages and towers. Read a stone's sum and type the answer. When the box matches, the bolt fires by itself.
+3. If two stones have the same answer, one answer strikes both.
+4. A digit that can't lead to any answer on screen is a misfire: the box clears and the digits pause for a moment.
+5. A cottage takes two hits: first its roof, then it's rubble. A struck tower is stunned for 5 seconds and the others fire instead.
+6. The storm wins when all six cottages are rubble, and the game shows the facts to practise.
+
+Waves, the full roster of storm creatures, settings for which facts you drill, and touch controls are on the way.
 
 ## Controls
 
 | Action | Keyboard + mouse | Controller | Touch |
 |---|---|---|---|
 | Start | Enter or Space, or click START | A or Start | Tap START |
+| Type a digit | 0–9 (top row or numpad) | Point the left stick at a digit on the arc (or step with the D-pad), then A | coming soon |
+| Delete a digit | Backspace | B | coming soon |
+| Sound on or off | M | Back | coming soon |
 
 ## Run it locally
 
@@ -56,6 +69,10 @@ docs/            the screenshot above
 src/
   main.ts        boots Phaser, loads the fonts
   config.ts      every tunable in one place
+  facts.ts       the facts, and the picker that keeps answers from being prefixes of each other
+  answer.ts      the answer box's rules: match, misfire, stale prefix
+  controls.ts    the keyboard and the controller's digit arc
+  synth.ts       Web Audio voices; sfx.ts and music.ts play in D Dorian
   sky.ts         the sky, clouds, rain and islands, drawn in code
   islands.ts     towers, cottages and the wizard
   scenes/        Title, Sky (the game) and Hud

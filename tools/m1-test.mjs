@@ -27,7 +27,7 @@ const world = await evaluate(`(() => { const s = ${sky}; return {
 }; })()`);
 check('three towers at 24, 208, 392', JSON.stringify(world.towers.map((x) => x[0])) === '[24,208,392]' && world.towers.every((x) => x[2] === 'tower'));
 check('six cottages', world.cottages.length === 6 && world.cottages.every((x) => x[2] === 'cottage'), JSON.stringify(world.cottages.map((x) => x[0])));
-check('wizard on the centre tower', world.wizard[0] === 208 && world.wizard[1] < world.towers[1][1]);
+check('wizard beside the answer box', world.wizard[0] + 8 <= 184 && world.wizard[1] > 196);
 check('camera zooms 4×', world.zoom === 4);
 
 // The backdrop moves: clouds drift and rain falls, measured on the scene's own clock (headless runs slowly).

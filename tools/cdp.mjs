@@ -11,7 +11,8 @@ const KEYS = {
   Enter: [13, 'Enter'], Escape: [27, 'Escape'], ' ': [32, 'Space'], m: [77, 'KeyM'],
   w: [87, 'KeyW'], a: [65, 'KeyA'], s: [83, 'KeyS'], d: [68, 'KeyD'],
   z: [90, 'KeyZ'], x: [88, 'KeyX'], c: [67, 'KeyC'], j: [74, 'KeyJ'], k: [75, 'KeyK'], l: [76, 'KeyL'],
-  Shift: [16, 'ShiftLeft'], p: [80, 'KeyP'],
+  Shift: [16, 'ShiftLeft'], p: [80, 'KeyP'], Backspace: [8, 'Backspace'],
+  ...Object.fromEntries([...'0123456789'].map((d) => [d, [48 + Number(d), `Digit${d}`]])),
 };
 
 export async function until(fn, ms = 15000, step = 100) {
@@ -66,7 +67,7 @@ export async function session({ project, out, port, debugPort, width = 1664, hei
     writeFileSync(`${out}/${name}.png`, Buffer.from(r.result.data, 'base64'));
   };
 
-  const key = (type, k) => send('Input.dispatchKeyEvent', { type, key: k, code: KEYS[k][1], windowsVirtualKeyCode: KEYS[k][0], nativeVirtualKeyCode: KEYS[k][0] });
+  const key = (type, k) => send('Input.dispatchKeyEvent', { type, key: k, code: KEYS[k][1], windowsVirtualKeyCode: KEYS[k][0], nativeVirtualKeyCode: KEYS[k][0], ...(type === 'rawKeyDown' && /^[0-9]$/.test(k) ? { text: k } : {}) });
   const down = (k) => key('rawKeyDown', k);
   const up = (k) => key('keyUp', k);
   const tap = async (k, ms = 80) => { await down(k); await sleep(ms); await up(k); };

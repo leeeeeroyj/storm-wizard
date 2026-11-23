@@ -81,6 +81,16 @@ function bakeAll(scene: Phaser.Scene) {
       }
     }
   });
+  // The wizard's own little storm cloud, 24×9: a pale rim over a darker belly.
+  bake(scene, 'wizcloud', 24, 9, (g) => {
+    for (const [col, dy] of [['#8a9ad0', 0], ['#4d5d92', 1]] as const) {
+      g.fillStyle = col;
+      disc(g, 7, 5 + dy, 3);
+      disc(g, 12, 4 + dy, 4);
+      disc(g, 17, 5 + dy, 3);
+      g.fillRect(3, 6 + dy, 18, 2);
+    }
+  });
 }
 
 interface Drop { x: number; y: number; s: number }

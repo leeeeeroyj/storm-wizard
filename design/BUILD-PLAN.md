@@ -73,7 +73,7 @@ From the Wikipedia article (read 2026-11-22):
 ## Scope
 
 **v1**
-- **One fixed screen** at 416×228. A cloud deck runs along the top, rain falls, and three floating islands sit along the bottom: `TOWER cottage cottage cottage TOWER cottage cottage cottage TOWER`. The wizard stands on the centre tower.
+- **One fixed screen** at 416×228. A cloud deck runs along the top, rain falls, and three floating islands sit along the bottom: `TOWER cottage cottage cottage TOWER cottage cottage cottage TOWER`. The wizard rides a small cloud just left of the answer box (moved there at the user's request after milestone 1).
 - **The verb.** Typing digits fills the answer box.
   - When the box equals a live answer, a bolt strikes every stone with that answer, from the nearest working tower.
   - When the box can no longer lead to any live answer, it misfires: the box clears, the streak resets, and digits are locked out for 0.4 s.
@@ -307,43 +307,44 @@ Each one ends playable, tested, committed, pushed and live.
 - **2026-11-22 Working rhythm:** the runbook default. Each milestone is shown before it's committed, and the file list is shown before the first push.
 
 - **2026-11-22 Pirata One ships as the unmodified TTF.** Its licence reserves the name 'Pirata' for unmodified copies, and a subset is arguably a modification. The Atkinson fonts reserve no name, so their Google Fonts latin subsets are fine.
+- **2026-11-22 Working rhythm, updated.** After milestone 1 the user said to commit and push it, then keep building. Each verified milestone is now committed and pushed without waiting, and the work stops for clarifying questions, taste decisions and the real-phone test.
+- **2026-11-22 The wizard moves beside the answer box** (the user's request after seeing milestone 1: a wizard on the centre tower didn't explain itself). He rides a small storm cloud just left of the box, flipped so his wand faces it.
+  - **Right answer:** his wand twinkles (a four-pointed star that grows for 0.12 s) and he hops a pixel. Then each struck stone takes a bolt from the nearest working tower, whose top flashes the same star. The stones hold still during the twinkle and are out of play at once, so the delay can't cost a landing or a second answer. The correct-answer sound plays at once, so typing still feels instant.
+  - **Misfire:** a different gesture by shape and motion, not just colour. He shakes side to side, round grey smoke puffs rise from the wand with a few falling grey sparks, and the answer box goes dark with the wrong digits struck through.
+- **2026-11-22 Stones start just under the cloud deck** (y = TOP + 22), not at the top bar, so the plate above a new stone never covers it. Fall times scale with the shorter drop, so speeds are unchanged.
+- **2026-11-22 No zero operands in + and −.** `14 + 0` teaches nothing. Answers of 0 (`5 − 5`) stay.
+- **2026-11-22 The controller arc's x radius shrank to 30** so its 1 and 0 sit beside the answer box, clear of the wizard.
 
 ## Open questions
 
 - **Ball lightning and towers.** The user kept the current picks and will revisit them if they don't feel right in play.
 
-## Status (2026-11-22: milestone 1 built and verified, waiting for the go-ahead to commit and push)
+## Status (2026-11-22: milestone 2 built and verified)
 
-- **Done (Part A):** the concept sheet (v0.1, with the user's picks) and this plan, approved by the user.
-- **Done (milestone 1):**
-  - Vite 8 + Phaser 4 + TypeScript project, `npm install` with 0 vulnerabilities.
-  - Self-hosted fonts with their OFL files: Atkinson Hyperlegible Mono 800 and Next as Google Fonts' latin woff2 subsets, and Pirata One as the unmodified TTF from the google/fonts repo.
-  - `TitleScene`: the name in Pirata One over the islands, START by Enter, Space, A, Start or a click.
-  - `SkyScene`: the dithered sky, a two-layer cloud deck, rain, three islands, three towers, six cottages and the wizard.
-  - `HudScene`: score, streak, wave, HI, II and speaker icons, and the answer box.
-  - `tools/cdp.mjs` (copied from Overtone) and `tools/m1-test.mjs`.
-  - The deploy workflow (`checkout@v7`, `setup-node@v7`, `upload-pages-artifact@v5`, `deploy-pages@v5`, the current majors on 2026-11-22), the MIT licence, the README and the hero screenshot.
-- **Repo** (C3–C4, done 2026-11-22 on the user's empty repo):
-  - description, homepage, Pages (workflow);
-  - topics: phaser, typescript, browser-game, math-game, educational-game;
-  - wiki and projects off;
-  - GitHub-owned actions only, workflow token read-only;
-  - the "Protect main" ruleset;
-  - vulnerability alerts on.
+- **Done:** Part A, and milestones 1 and 2. Milestone 1 is live at https://leeeeeroyj.github.io/storm-wizard/.
+- **Milestone 2 (first playable):**
+  - `facts.ts`: fact pools, the prefix-safe weighted picker and Leitner boxes (in memory for now; saved in milestone 4).
+  - `answer.ts`: match, misfire and stale prefix.
+  - `controls.ts`: digits latched until read, Backspace, M, and the controller's digit arc (stick or D-pad, A, B, Back).
+  - `synth.ts` (from Overtone), `sfx.ts` and `music.ts`: digit plucks, correct (climbing with the streak), double, misfire, blast, landing and lost-cottage sounds, and the calm layer of the music.
+  - The Sky scene:
+    - hail with plates, landing chevrons and urgent outlines;
+    - the wand's twinkle, then bolts from the nearest working tower;
+    - blasts and chains;
+    - cottages (roof, then rubble) and stunned towers;
+    - the missed fact shown big;
+    - the streak multiplier;
+    - a first game-over panel with the facts to practise, which returns to the title.
+  - It plays wave 1's numbers without end. Waves, retry, pause and saving the high score are milestone 4.
 - **Verified:**
-  - `m1-test` 11/11:
-    - fonts loaded and every sprite at 16×16;
-    - three towers, six cottages, the wizard on the centre tower, camera at 4×;
-    - clouds drifting, the HUD's initial values;
-    - FIT letterboxing at 844×390;
-    - no page errors.
-  - `npm run build` clean (only Phaser's usual chunk-size note), and `dist` holds no local paths or the dev handle.
-  - PNG metadata clean.
-  - Repo checks:
-    - secret scanning and push protection on;
-    - workflow permissions read-only;
-    - Pages `https_enforced`;
-    - the only collaborator is leeeeeroyj;
-    - no deploy keys, webhooks, Actions secrets or variables.
-  - Screenshots of the title and the islands looked at.
-- **Next:** the user's go-ahead for the first commit and push, then the deploy watched to green, then milestone 2 (first playable).
+  - `m2-test` 23/23:
+    - the pure rules: no negative differences, exact division, no prefix pair in 3,000 picks, missed facts back in 2–4 spawns, box moves, the answer rules;
+    - in the game: the wizard's place, the twinkle then the bolt from the nearest tower, the misfire and its lockout, Backspace, equal answers, chains (not counted for drilling), landings and the fact popup, stunned towers, the silent stale clear, the controller arc, game over and the return to the title.
+  - `m1-test` 11/11 (its wizard check now looks beside the box).
+  - Screenshots looked at.
+- **Philosophy checklist at milestone 2:**
+  - **The verb:** typing an answer and seeing the bolt land feels immediate; there's no Enter to slow it.
+  - **Fair:** chevrons warn before every landing, and a miss always shows the fact.
+  - **Risk and reward:** the streak multiplier is in; the Thunderclap arrives in milestone 3.
+  - **Readable for colour-blind players:** plates are white on dark ink. Misfire and twinkle differ by shape and motion. Damage shows by sprite shape, and a stunned tower by a "z" and transparency.
+- **Next:** milestone 3, the full roster (split cloud, Storm Crow and gifts, ball lightning, the Thunderclap).

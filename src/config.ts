@@ -46,11 +46,48 @@ export const ISLANDS: ReadonlyArray<readonly [number, number]> = [[2, 186], [190
 /** TOWER cottage cottage cottage TOWER cottage cottage cottage TOWER. */
 export const TOWERS_X = [24, 208, 392];
 export const COTTAGES_X = [70, 116, 162, 254, 300, 346];
-/** Where the wizard stands, on top of the centre tower. */
-export const WIZARD = { x: 208, y: GROUND - 24 };
-
 /** The answer box, bottom centre, clear of the bottom corners (touch). */
 export const ANSWER_BOX = { w: 48, h: 14, y: 206 };
+/** The wizard rides a small storm cloud just left of the answer box, wand towards it. */
+export const WIZARD = { x: 164, y: 210 };
+/** The wand's tip, from the wizard's centre (the sprite is flipped so the wand faces the box). */
+export const WAND = { x: 6, y: -6 };
+
+/** Fall time for a stone from the cloud deck to the ground, the spawn gap multiplier and the most on screen. */
+export const PACE = {
+  breeze: { fall: 18, gap: 1.4, cap: 3 },
+  gale: { fall: 12, gap: 1.0, cap: 5 },
+  tempest: { fall: 8, gap: 0.75, cap: 7 },
+} as const;
+export type Pace = keyof typeof PACE;
+
+/** Points per threat, before the streak multiplier. */
+export const POINTS = { hail: 50, cloud: 100, ball: 150, crow: 250, chain: 25 } as const;
+/** The streak multiplier: ×(1 + correct-in-a-row ÷ 3), whole steps, capped. */
+export const multFor = (streak: number) => Math.min(8, 1 + Math.floor(streak / 3));
+
+export const PLAY = {
+  /** The wand twinkles this long before the towers fire. */
+  twinkle: 0.12,
+  /** A misfire locks the digits out this long. */
+  lockout: 0.4,
+  /** A struck tower can't fire for this long. */
+  stun: 5,
+  /** Answered above this fraction of the fall counts as quick (the fact moves up a box). */
+  quick: 0.6,
+  /** Blast radius, its growth (px/s) and life. */
+  blast: { r: 15, grow: 60, life: 0.75 },
+  /** A landed fact shows over the impact this long. */
+  factLife: 2.2,
+  /** Cottages take two hits. */
+  cottageHits: 2,
+  /** Stones appear just under the cloud deck, with room for their plate above. */
+  spawnY: TOP + 22,
+};
+
+/** The controller's digit arc, opening upwards over the answer box, clear of the wizard. */
+export const ARC = { cx: 208, cy: 216, r: 30 };
+export const ARC_DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 
 export const BACKDROP = {
   /** Sky gradient, top to bottom, dithered between bands. */
