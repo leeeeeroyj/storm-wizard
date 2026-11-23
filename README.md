@@ -24,7 +24,17 @@ Storm Wizard is an original arcade game inspired by the mechanics of Atari's 198
 
 - **Type the answer, strike the hail.** Every hailstone carries a sum on a white plate. Type its answer and the wizard's wand twinkles, then the nearest tower's lightning bolt bursts it. There's no Enter key: the bolt fires the moment the number is right.
 - **Mistakes teach.** A wrong digit fizzles (the wand puffs smoke and the box clears). A stone that gets through shows its whole fact, like `7 × 8 = 56`, big over the impact, and that fact comes back a few stones later.
-- **Chains.** A blast catches any stone that drifts into it.
+- **Chains.** A blast catches any hailstone or split cloud that drifts into it.
+- **The storm's roster.** Each plate has its own border, so you can tell them apart without colour:
+
+  | Threat | Plate | What it does |
+  |---|---|---|
+  | Hailstone | Plain | Falls straight at a cottage or tower |
+  | Split cloud | Underlined | Bursts into three new stones at mid-sky unless you answer it first |
+  | Ball lightning | Dashed edges | Zigzags as it falls, and blasts can't catch it |
+  | Storm Crow | Double border, a diamond each side | Crosses high with a harder problem. Answer it for a gift: **Gust** slows the storm, **Mend** rebuilds a cottage, **Ward** shields one |
+
+- **Streaks and the Thunderclap.** Every three right answers in a row raise the multiplier, up to ×8. At ×4 you can spend the streak on a Thunderclap that strikes every stone in the sky at once, or keep it and keep climbing.
 - **The islands under the storm.** Three floating islands hold three towers and six cottages under a drifting cloud deck and falling rain. The Storm Wizard rides his own little cloud beside the answer box.
 - **Made to be read.** Every number uses Atkinson Hyperlegible, a typeface designed so that similar letters and digits are easy to tell apart.
 
@@ -33,11 +43,12 @@ Storm Wizard is an original arcade game inspired by the mechanics of Atari's 198
 1. Press **START** (Enter, A on a controller, or a click or tap).
 2. Hail falls towards the cottages and towers. Read a stone's sum and type the answer. When the box matches, the bolt fires by itself.
 3. If two stones have the same answer, one answer strikes both.
-4. A digit that can't lead to any answer on screen is a misfire: the box clears and the digits pause for a moment.
-5. A cottage takes two hits: first its roof, then it's rubble. A struck tower is stunned for 5 seconds and the others fire instead.
-6. The storm wins when all six cottages are rubble, and the game shows the facts to practise.
+4. Right answers in a row build the multiplier (the pips beside ×1 fill towards the next step). From ×4 a bolt sign appears: press **Space** (Y on a controller) for a Thunderclap.
+5. A digit that can't lead to any answer on screen is a misfire: the box clears and the digits pause for a moment.
+6. A cottage takes two hits: first its roof, then it's rubble. A struck tower is stunned for 5 seconds and the others fire instead.
+7. The storm wins when all six cottages are rubble, and the game shows the facts to practise.
 
-Waves, the full roster of storm creatures, settings for which facts you drill, and touch controls are on the way.
+Waves, settings for which facts you drill, saving what you've learned, and touch controls are on the way.
 
 ## Controls
 
@@ -46,6 +57,7 @@ Waves, the full roster of storm creatures, settings for which facts you drill, a
 | Start | Enter or Space, or click START | A or Start | Tap START |
 | Type a digit | 0–9 (top row or numpad) | Point the left stick at a digit on the arc (or step with the D-pad), then A | coming soon |
 | Delete a digit | Backspace | B | coming soon |
+| Thunderclap (at ×4 or more) | Space | Y | coming soon |
 | Sound on or off | M | Back | coming soon |
 
 ## Run it locally

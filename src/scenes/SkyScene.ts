@@ -1,7 +1,10 @@
 import Phaser from 'phaser';
 import { staleClear, typeDigit } from '../answer';
-import { COLORS, COTTAGES_X, GROUND, multFor, PACE, PLAY, POINTS, RENDER_SCALE, TEXT, TOP, TOWERS_X, WAND, WIDTH, WIZARD } from '../config';
-import { Controls, type Device } from '../controls';
+import {
+  COLORS, COTTAGES_X, GIFTS, GROUND, multFor, PACE, PLAY, POINTS, RENDER_SCALE, ROSTER, TEXT, THUNDERCLAP, TOP, TOWERS_X,
+  WAND, WIDTH, WIZARD, type Gift,
+} from '../config';
+import { Controls, type Device, type Input } from '../controls';
 import { DEFAULT_SETTINGS, Picker, poolFor, type Box, type Fact, type Settings } from '../facts';
 import { loadHi } from '../hi';
 import { placeIslands, type Islands } from '../islands';
@@ -17,6 +20,8 @@ export interface HudState {
   score: number;
   hi: number;
   mult: number;
+  /** Correct answers in a row: the pips towards the next multiplier step. */
+  streak: number;
   wave: number;
   buffer: string;
   /** The digits that misfired, shown struck through while `misfireT` runs. */
@@ -30,6 +35,8 @@ export interface HudState {
   over: boolean;
 }
 
+export type Kind = 'hail' | 'cloud' | 'ball' | 'crow';
+
 export interface Target {
   kind: 'cottage' | 'tower';
   i: number;
@@ -37,7 +44,7 @@ export interface Target {
 }
 
 export interface Foe {
-  kind: 'hail';
+  kind: Kind;
   fact: Fact;
   sx: number;
   sy: number;
@@ -45,12 +52,18 @@ export interface Foe {
   ty: number;
   x: number;
   y: number;
-  /** Progress along the fall, 0..1. */
+  /** Progress along the fall, 0..1 (the crow doesn't fall: it stays 0). */
   p: number;
   /** Seconds for the whole fall. */
   dur: number;
-  target: Target;
+  /** Where it will land (none for the crow, or a cloud, which bursts in mid-sky). */
+  target: Target | undefined;
+  /** The crow's speed across the sky, px/s. */
+  vx: number;
+  /** A per-stone phase for wobbles and zigzags. */
+  wob: number;
   img: Phaser.GameObjects.Image;
+  halo: Phaser.GameObjects.Image | undefined;
   text: Phaser.GameObjects.Text;
   dead: boolean;
   /** Answered: it holds still while the wand twinkles, then the bolt arrives. */
@@ -62,9 +75,11 @@ interface Blast { x: number; y: number; r: number; max: number; life: number }
 interface Spark { x: number; y: number; vx: number; vy: number; life: number; color: number; gravity: number }
 interface Ring { x: number; y: number; r: number; dr: number; life: number }
 interface Puff { x: number; y: number; r: number; life: number }
-interface Popup { text: Phaser.GameObjects.Text; life: number; max: number; rise: number; y0: number }
+interface Popup { text: Phaser.GameObjects.Text; icon?: Phaser.GameObjects.Image; life: number; max: number; rise: number; y0: number }
 /** The wizard's gesture: a twinkle at the wand tip when right, a shake and a puff of smoke when wrong. */
-export interface Cast { kind: 'twinkle' | 'fizzle'; t: number }
+export interface Cast { kind: 'twinkle' | 'fizzle'; t: number; big: boolean }
+/** Stones waiting for the twinkle to finish, and the multiplier they'll score at. */
+interface Strike { foes: Foe[]; t: number; mult: number }
 
 const TAU = Math.PI * 2;
 const lerp = Phaser.Math.Linear;
@@ -74,6 +89,8 @@ const REDUCED = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches 
 const TOWER_TOP = GROUND - 17;
 const TWINKLE_END = PLAY.twinkle + 0.2;
 const FIZZLE_END = 0.5;
+const SPRITE: Record<Kind, string> = { hail: 'hailstone', cloud: 'splitcloud', ball: 'balllightning', crow: 'crow' };
+const GIFT_KINDS: Gift[] = ['gust', 'mend', 'ward'];
 
 /** The game: one fixed screen of sky over the islands. */
 export class SkyScene extends Phaser.Scene {
@@ -85,10 +102,12 @@ export class SkyScene extends Phaser.Scene {
   hud!: HudState;
   settings: Settings = DEFAULT_SETTINGS;
   picker!: Picker;
+  /** One range up: the Storm Crow's problems. */
+  stretchPool: Fact[] = [];
   controls!: Controls;
   foes: Foe[] = [];
   /** Answers waiting for the wand's twinkle to finish. */
-  strikes: { foes: Foe[]; t: number }[] = [];
+  strikes: Strike[] = [];
   bolts: Bolt[] = [];
   /** The last bolt fired, for tests: which tower, at which stone. */
   lastBolt: { tower: number; x: number; y: number } | undefined;
@@ -97,11 +116,20 @@ export class SkyScene extends Phaser.Scene {
   streak = 0;
   /** Hits taken per cottage: 1 loses the roof, 2 leaves rubble. */
   cottages: number[] = [];
+  /** A ward over each cottage takes the next hit for it. */
+  wards: boolean[] = [];
   /** Seconds each tower is still stunned. */
   stun: number[] = [];
+  /** Seconds of Gust left. */
+  gust = 0;
   lockout = 0;
+  /** The last gift given, for tests and the HUD. Tests set `forceGift` to choose it. */
+  lastGift: Gift | undefined;
+  forceGift: Gift | undefined;
   /** The spawner runs (tests switch it off to set up a sky by hand). */
   spawning = true;
+  /** Spawns so far: until waves arrive in milestone 4, the roster joins in by count. */
+  spawned = 0;
   state: 'play' | 'over' = 'play';
   private overT = 0;
   private nextSpawn = 0;
@@ -110,6 +138,7 @@ export class SkyScene extends Phaser.Scene {
   private puffs: Puff[] = [];
   private popups: Popup[] = [];
   private towerFlash: number[] = [];
+  private flash!: Phaser.GameObjects.Rectangle;
   private rand: () => number = Math.random;
   private fx!: Phaser.GameObjects.Graphics;
   private plates!: Phaser.GameObjects.Graphics;
@@ -136,22 +165,30 @@ export class SkyScene extends Phaser.Scene {
     this.popups = [];
     this.cast = undefined;
     this.lastBolt = undefined;
+    this.lastGift = undefined;
+    this.forceGift = undefined;
     this.streak = 0;
     this.lockout = 0;
+    this.gust = 0;
+    this.spawned = 0;
     this.spawning = !this.attract;
     this.state = 'play';
     this.nextSpawn = 1.5;
     this.cottages = COTTAGES_X.map(() => 0);
+    this.wards = COTTAGES_X.map(() => false);
     this.stun = TOWERS_X.map(() => 0);
     this.towerFlash = TOWERS_X.map(() => 0);
     this.picker = new Picker(poolFor(this.settings), new Map<string, Box>(), this.rand);
+    this.stretchPool = poolFor(this.settings, true);
 
     fitCamera(this, RENDER_SCALE);
     this.backdrop = new Backdrop(this);
     this.islands = placeIslands(this);
+    bakeHalo(this, 'crow', 'crow-halo');
     this.fx = this.add.graphics().setDepth(2);
     this.plates = this.add.graphics().setDepth(5);
     this.top = this.add.graphics().setDepth(6);
+    this.flash = this.add.rectangle(0, 0, WIDTH, 240, 0xfffbe0).setOrigin(0).setDepth(9).setAlpha(0);
 
     restoreMute(this);
     this.synth = new Synth(this);
@@ -164,7 +201,7 @@ export class SkyScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.music.stop());
 
     this.hud = {
-      score: 0, hi: loadHi(), mult: 1, wave: 1, buffer: '', misfire: '', misfireT: 0,
+      score: 0, hi: loadHi(), mult: 1, streak: 0, wave: 1, buffer: '', misfire: '', misfireT: 0,
       attract: this.attract, muted: this.sound.mute, device: this.controls?.device ?? 'kbm', arc: 4, over: false,
     };
     this.registry.set('hud', this.hud);
@@ -179,6 +216,7 @@ export class SkyScene extends Phaser.Scene {
     if (this.controls) this.handleInput(this.controls.read(dt));
 
     this.lockout = Math.max(0, this.lockout - dt);
+    this.gust = Math.max(0, this.gust - dt);
     this.hud.misfireT = Math.max(0, this.hud.misfireT - dt);
     for (let i = 0; i < this.stun.length; i++) {
       this.stun[i] = Math.max(0, this.stun[i] - dt);
@@ -195,11 +233,12 @@ export class SkyScene extends Phaser.Scene {
     this.tickEffects(dt);
     this.drawWorld();
     this.hud.mult = multFor(this.streak);
+    this.hud.streak = this.streak;
   }
 
   // ---- Input ----
 
-  private handleInput(input: ReturnType<Controls['read']>) {
+  private handleInput(input: Input) {
     this.hud.device = input.device;
     this.hud.arc = this.controls.arc;
     if (input.mute) {
@@ -213,6 +252,7 @@ export class SkyScene extends Phaser.Scene {
       this.sfx.undo();
     }
     for (const d of input.digits) this.type(d);
+    if (input.clap) this.thunderclap();
   }
 
   /** One digit into the answer box: it may strike, wait for more, or misfire. */
@@ -238,11 +278,12 @@ export class SkyScene extends Phaser.Scene {
     const hit = this.live().filter((f) => f.fact.str === answer);
     for (const f of hit) {
       f.doomed = true;
-      this.picker.credit(f.fact, (f.y - TOP) / (GROUND - TOP) < PLAY.quick);
+      // The crow's stretch problem always counts as quick: it's high, and it's hard.
+      this.picker.credit(f.fact, f.kind === 'crow' || (f.y - TOP) / (GROUND - TOP) < PLAY.quick);
     }
     this.streak++;
-    this.cast = { kind: 'twinkle', t: 0 };
-    this.strikes.push({ foes: hit, t: PLAY.twinkle });
+    this.cast = { kind: 'twinkle', t: 0, big: false };
+    this.strikes.push({ foes: hit, t: PLAY.twinkle, mult: multFor(this.streak) });
     if (hit.length > 1) this.sfx.double();
     else this.sfx.correct(this.streak);
   }
@@ -253,11 +294,33 @@ export class SkyScene extends Phaser.Scene {
     this.hud.misfireT = 0.5;
     this.lockout = PLAY.lockout;
     this.streak = 0;
-    this.cast = { kind: 'fizzle', t: 0 };
+    this.cast = { kind: 'fizzle', t: 0, big: false };
     this.sfx.misfire();
     const tip = this.wandTip();
     for (let i = 0; i < 4; i++) this.puffs.push({ x: tip.x + (i - 1.5) * 3, y: tip.y - 1 - (i % 2) * 2, r: 1.6 + (i % 2) * 0.6, life: 0.6 + i * 0.08 });
     for (let i = 0; i < 5; i++) this.sparks.push({ x: tip.x, y: tip.y, vx: (this.rand() - 0.3) * 30, vy: -10 - this.rand() * 15, life: 0.35, color: COLORS.dim, gravity: 120 });
+  }
+
+  /**
+   * The Thunderclap, at ×4 or more: every stone but the crow is struck at the current multiplier, and the streak is
+   * spent. None of those facts count for drilling.
+   */
+  thunderclap() {
+    if (this.state !== 'play' || multFor(this.streak) < THUNDERCLAP.mult) return false;
+    const hit = this.live().filter((f) => f.kind !== 'crow');
+    if (!hit.length) return false;
+    for (const f of hit) f.doomed = true;
+    this.strikes.push({ foes: hit, t: PLAY.twinkle, mult: multFor(this.streak) });
+    this.streak = 0;
+    this.hud.buffer = staleClear(this.hud.buffer, this.liveAnswers());
+    this.cast = { kind: 'twinkle', t: 0, big: true };
+    this.sfx.clap();
+    if (!REDUCED) {
+      this.flash.setAlpha(0.35);
+      this.cameras.main.shake(300, 0.01);
+    }
+    this.popup('THUNDERCLAP!', WIDTH / 2, 70, { size: 14, color: TEXT.bolt, life: 1.2, depth: 3 });
+    return true;
   }
 
   wandTip() {
@@ -276,48 +339,122 @@ export class SkyScene extends Phaser.Scene {
     return list;
   }
 
+  /**
+   * Until waves arrive (milestone 4), the roster joins by spawn count: hail first, then a split cloud every fourth
+   * stone, ball lightning every fifth from the ninth, and a Storm Crow every ninth from the seventh.
+   */
+  kindFor(n: number): Kind {
+    if (n >= 6 && n % 9 === 6) return 'crow';
+    if (n >= 8 && n % 5 === 4) return 'ball';
+    if (n >= 3 && n % 4 === 3) return 'cloud';
+    return 'hail';
+  }
+
   private spawnTick(dt: number) {
     if (!this.spawning) return;
-    // Milestone 2 plays wave 1's numbers without end; waves come with milestone 4.
+    // Milestone 3 plays wave 1's pace without end; waves come with milestone 4.
     const pace = PACE[this.settings.pace];
     const cap = Math.min(pace.cap, 2);
     const gap = 3.0 * pace.gap;
     this.nextSpawn -= dt;
-    if (this.nextSpawn > 0 || this.live().length >= cap) return;
-    this.nextSpawn = this.spawnHail() ? gap * (0.7 + this.rand() * 0.6) : 0.3;
+    const kind = this.kindFor(this.spawned);
+    // The crow doesn't count towards the cap: it never attacks.
+    if (this.nextSpawn > 0 || (kind !== 'crow' && this.live().filter((f) => f.kind !== 'crow').length >= cap)) return;
+    if (this.spawn(kind)) {
+      this.spawned++;
+      this.nextSpawn = kind === 'crow' ? 0.5 : gap * (0.7 + this.rand() * 0.6);
+    } else this.nextSpawn = 0.3;
   }
 
-  /** A hailstone with a problem. Tests pass a fact, a start point and a target. */
-  spawnHail(opts: { fact?: Fact; x?: number; y?: number; target?: Target } = {}): Foe | null {
+  spawnHail(opts: SpawnOpts = {}) {
+    return this.spawn('hail', opts);
+  }
+
+  /** A threat with a problem. Tests pass a fact, a start point and a target. */
+  spawn(kind: Kind, opts: SpawnOpts = {}): Foe | null {
     const lives = this.live();
-    const fact = opts.fact ?? this.picker.pick(lives.map((f) => f.fact.str), new Set(lives.map((f) => f.fact.key)));
+    const fact = opts.fact ?? this.picker.pick(lives.map((f) => f.fact.str), new Set(lives.map((f) => f.fact.key)), kind === 'crow' ? this.stretchPool : undefined);
     if (!fact) return null;
-    const targets = this.standingTargets();
-    const target = opts.target ?? targets[Math.floor(this.rand() * targets.length)];
-    const sx = opts.x ?? clamp(target.x + (this.rand() - 0.5) * 260, 12, WIDTH - 12);
-    const sy = opts.y ?? PLAY.spawnY;
-    const ty = GROUND - 4;
-    const fall = PACE[this.settings.pace].fall;
-    const f: Foe = {
-      kind: 'hail', fact, sx, sy, tx: target.x, ty, x: sx, y: sy, p: 0,
-      dur: fall * ((ty - sy) / (GROUND - TOP)), target, dead: false, doomed: false,
-      img: this.add.image(sx, sy, 'hailstone').setDepth(4),
-      text: label(this, sx, sy, fact.label, 7, TEXT.plateInk, { align: 'center' }).setDepth(5.1),
-    };
+    const base = { kind, fact, p: 0, vx: 0, wob: this.rand() * TAU, dead: false, doomed: false, halo: undefined as Phaser.GameObjects.Image | undefined };
+    let f: Foe;
+    if (kind === 'crow') {
+      const dir = opts.dir ?? (this.rand() < 0.5 ? 1 : -1);
+      const [y0, y1] = ROSTER.crow.y;
+      const x = opts.x ?? (dir > 0 ? -12 : WIDTH + 12), y = opts.y ?? y0 + this.rand() * (y1 - y0);
+      f = { ...base, sx: x, sy: y, tx: x, ty: y, x, y, dur: 1, target: undefined, vx: dir * ROSTER.crow.speed, img: this.add.image(x, y, 'crow').setFlipX(dir < 0).setDepth(4), text: this.plateText(fact, true) };
+      f.halo = this.add.image(x, y, 'crow-halo').setFlipX(dir < 0).setDepth(3.9);
+      this.sfx.caw();
+    } else {
+      const targets = this.standingTargets();
+      const target = opts.target ?? targets[Math.floor(this.rand() * targets.length)];
+      const sx = opts.x ?? clamp(target.x + (this.rand() - 0.5) * 260, 12, WIDTH - 12);
+      const sy = opts.y ?? PLAY.spawnY;
+      const cloud = kind === 'cloud';
+      const ty = cloud ? ROSTER.cloud.burstY : GROUND - 4;
+      const tx = cloud ? lerp(sx, target.x, 0.45) : target.x;
+      const mul = (cloud ? ROSTER.cloud.fallMul : kind === 'ball' ? ROSTER.ball.fallMul : 1) * (opts.fallMul ?? 1);
+      // A fall's time scales with its height, so every stone of a kind falls at the same speed.
+      const dur = PACE[this.settings.pace].fall * mul * ((ty - sy) / (GROUND - TOP));
+      f = { ...base, sx, sy, tx, ty, x: sx, y: sy, dur: Math.max(0.3, dur), target: cloud ? undefined : target, img: this.add.image(sx, sy, SPRITE[kind]).setDepth(4), text: this.plateText(fact, false) };
+      if (kind === 'ball') this.sfx.crackle();
+    }
     this.foes.push(f);
     return f;
   }
 
+  private plateText(fact: Fact, crow: boolean) {
+    return label(this, 0, 0, fact.label, 7, TEXT.plateInk, { align: 'center' }).setDepth(5.1).setData('crow', crow);
+  }
+
   private moveFoes(dt: number) {
+    const slow = this.gust > 0 ? GIFTS.gust.slow : 1;
     for (const f of this.foes) {
       if (f.dead || f.doomed) continue;
-      f.p += dt / f.dur;
+      if (f.kind === 'crow') {
+        f.x += f.vx * dt * slow;
+        f.y = f.sy + Math.sin(this.playTime * 3 + f.wob) * 1.5;
+        // Gone off the far side: no harm, and no mark against the fact.
+        if (f.x < -20 || f.x > WIDTH + 20) this.remove(f);
+        continue;
+      }
+      f.p += (dt * slow) / f.dur;
       const p = Math.min(1, f.p);
       f.x = lerp(f.sx, f.tx, p);
       f.y = lerp(f.sy, f.ty, p);
-      if (f.p >= 1) this.land(f);
+      if (f.kind === 'ball') f.x += Math.sin(p * TAU * ROSTER.ball.swings + f.wob) * ROSTER.ball.zigzag * (1 - p);
+      if (f.kind === 'cloud') f.x += Math.sin(this.playTime * 0.8 + f.wob) * 3;
+      if (f.p >= 1) {
+        if (f.kind === 'cloud') this.burstCloud(f);
+        else this.land(f);
+      }
     }
     this.foes = this.foes.filter((f) => !f.dead);
+  }
+
+  /** Takes a threat off the sky without a blast. */
+  private remove(f: Foe) {
+    f.dead = true;
+    f.img.destroy();
+    f.halo?.destroy();
+    f.text.destroy();
+    this.hud.buffer = staleClear(this.hud.buffer, this.liveAnswers());
+  }
+
+  /** A split cloud reached mid-sky unanswered: it bursts into three stones with new problems, and its fact is missed. */
+  private burstCloud(f: Foe) {
+    this.remove(f);
+    this.burst(f.x, f.y, COLORS.dim, 10);
+    this.sfx.split();
+    this.picker.miss(f.fact);
+    this.popup(`${f.fact.label} = ${f.fact.ans}`, clamp(f.x, 50, WIDTH - 50), f.y - 44, { size: 13, color: TEXT.ink, life: PLAY.factLife, depth: 3 });
+    const targets = this.standingTargets();
+    const c = ROSTER.cloud;
+    for (let i = 0; i < c.shards; i++) {
+      // Spread out and staggered, so the three plates can be read apart.
+      const x = clamp(f.x + (i - 1) * c.shardSpread, 12, WIDTH - 12);
+      this.spawn('hail', { x, y: f.y + 4 + i * 6, target: targets[Math.floor(this.rand() * targets.length)], fallMul: c.shardFallMul });
+    }
+    this.hud.buffer = staleClear(this.hud.buffer, this.liveAnswers());
   }
 
   /** The twinkle has finished: each struck stone takes a bolt from the nearest tower that isn't stunned. */
@@ -325,15 +462,15 @@ export class SkyScene extends Phaser.Scene {
     for (const s of this.strikes) {
       s.t -= dt;
       if (s.t > 0) continue;
-      const mult = multFor(this.streak);
       for (const f of s.foes) {
         if (f.dead) continue;
         const tower = this.nearestTower(f.x);
         this.bolts.push({ x0: TOWERS_X[tower], y0: TOWER_TOP, x1: f.x, y1: f.y, life: 0.2, seed: this.rand() * 1e9 });
         this.towerFlash[tower] = 0.12;
         this.lastBolt = { tower, x: f.x, y: f.y };
-        this.score(POINTS[f.kind] * mult, f.x, f.y - 10);
+        this.score(POINTS[f.kind] * s.mult, f.x, f.y - 10);
         this.kill(f);
+        if (f.kind === 'crow') this.gift(f);
       }
     }
     this.strikes = this.strikes.filter((s) => s.t > 0);
@@ -349,25 +486,48 @@ export class SkyScene extends Phaser.Scene {
   }
 
   private kill(f: Foe) {
-    f.dead = true;
-    f.img.destroy();
-    f.text.destroy();
+    this.remove(f);
     const b = PLAY.blast;
-    this.blasts.push({ x: f.x, y: f.y, r: 2, max: b.r, life: b.life });
-    this.burst(f.x, f.y, COLORS.ice, 14);
+    this.blasts.push({ x: f.x, y: f.y, r: 2, max: f.kind === 'cloud' ? ROSTER.cloud.blast : b.r, life: b.life });
+    this.burst(f.x, f.y, f.kind === 'ball' ? COLORS.bolt : COLORS.ice, 14);
     this.rings.push({ x: f.x, y: f.y, r: 3, dr: 70, life: 0.35 });
     this.sfx.blast();
-    this.hud.buffer = staleClear(this.hud.buffer, this.liveAnswers());
   }
 
-  /** Blasts grow, and catch any hailstone that drifts in: a chain, worth less, and not counted for drilling. */
+  /** The crow's gift: Gust, Mend or Ward, at random. */
+  private gift(f: Foe) {
+    const g = this.forceGift ?? GIFT_KINDS[Math.floor(this.rand() * GIFT_KINDS.length)];
+    this.lastGift = g;
+    let note = g.toUpperCase();
+    if (g === 'gust') this.gust = GIFTS.gust.time;
+    if (g === 'mend') {
+      const worst = this.cottages.reduce((b, hits, i) => (hits > this.cottages[b] ? i : b), 0);
+      if (this.cottages[worst] > 0) {
+        this.cottages[worst]--;
+        this.drawCottage(worst);
+      } else {
+        this.score(GIFTS.mendScore, f.x, f.y + 22);
+        note = `MEND +${GIFTS.mendScore}`;
+      }
+    }
+    if (g === 'ward') {
+      // The standing cottage with the closest stone heading for it (or the first standing one).
+      const threat = (i: number) => this.live().reduce((m, s) => (s.target?.kind === 'cottage' && s.target.i === i ? Math.max(m, s.p) : m), -1);
+      const open = this.cottages.map((_, i) => i).filter((i) => this.cottages[i] < PLAY.cottageHits && !this.wards[i]);
+      if (open.length) this.wards[open.sort((a, b) => threat(b) - threat(a))[0]] = true;
+    }
+    this.popup(note, f.x + 6, Math.max(TOP + 24, f.y + 12), { size: 7, color: TEXT.ink, life: 1.4, rise: 4, depth: 7, icon: g });
+    this.sfx.gift();
+  }
+
+  /** Blasts grow, and catch any hailstone or split cloud that drifts in: a chain, worth less, not counted for drilling. */
   private runBlasts(dt: number) {
     for (const b of this.blasts) {
       b.life -= dt;
       b.r = Math.min(b.max, b.r + dt * PLAY.blast.grow);
       if (b.life <= 0) continue;
       for (const f of this.foes) {
-        if (f.dead || f.doomed) continue;
+        if (f.dead || f.doomed || f.kind === 'ball' || f.kind === 'crow') continue;
         if (Math.hypot(f.x - b.x, f.y - b.y) < b.r + 3) {
           const pts = POINTS.chain * multFor(this.streak);
           this.score(pts, f.x, f.y - 10, `CHAIN ${pts}`);
@@ -380,13 +540,16 @@ export class SkyScene extends Phaser.Scene {
 
   /** A stone got through: damage, the streak resets, and the full fact shows big over the impact. */
   private land(f: Foe) {
-    f.dead = true;
-    f.img.destroy();
-    f.text.destroy();
+    this.remove(f);
     this.burst(f.x, GROUND - 2, COLORS.ice, 18);
     if (!REDUCED) this.cameras.main.shake(140, 0.006);
-    const t = f.target;
-    if (t.kind === 'cottage') {
+    const t = f.target!;
+    if (t.kind === 'cottage' && this.wards[t.i]) {
+      // The ward takes the hit and pops.
+      this.wards[t.i] = false;
+      this.rings.push({ x: t.x, y: GROUND - 8, r: 14, dr: 30, life: 0.4 });
+      this.sfx.ward();
+    } else if (t.kind === 'cottage') {
       const hits = Math.min(PLAY.cottageHits, this.cottages[t.i] + 1);
       const lost = hits === PLAY.cottageHits && this.cottages[t.i] < hits;
       this.cottages[t.i] = hits;
@@ -403,7 +566,7 @@ export class SkyScene extends Phaser.Scene {
     if (this.cottages.every((h) => h >= PLAY.cottageHits)) this.gameOver();
   }
 
-  private drawCottage(i: number) {
+  drawCottage(i: number) {
     const img = this.islands.cottages[i];
     const hits = this.cottages[i];
     if (hits === 0) img.setTexture('cottage').setCrop().setY(GROUND - 8);
@@ -444,9 +607,10 @@ export class SkyScene extends Phaser.Scene {
     this.popup(text, x, Math.max(TOP + 12, y), { size: 6, color: TEXT.ink, life: 0.8, rise: 6, depth: 7 });
   }
 
-  private popup(str: string, x: number, y: number, o: { size: number; color: string; life: number; rise?: number; depth: number }) {
+  private popup(str: string, x: number, y: number, o: { size: number; color: string; life: number; rise?: number; depth: number; icon?: Gift }) {
     const text = label(this, x, y, str, o.size, o.color, { align: 'center' }).setDepth(o.depth).setStroke(TEXT.plateInk, o.size > 8 ? 4 : 2);
-    this.popups.push({ text, life: o.life, max: o.life, rise: o.rise ?? 0, y0: y });
+    const icon = o.icon ? this.add.image(x - text.width / 2 - 10, y + text.height / 2, o.icon).setDepth(o.depth) : undefined;
+    this.popups.push({ text, icon, life: o.life, max: o.life, rise: o.rise ?? 0, y0: y });
   }
 
   private burst(x: number, y: number, color: number, n: number) {
@@ -460,8 +624,10 @@ export class SkyScene extends Phaser.Scene {
   private tickEffects(dt: number) {
     if (this.cast) {
       this.cast.t += dt;
-      if (this.cast.t > (this.cast.kind === 'twinkle' ? TWINKLE_END : FIZZLE_END)) this.cast = undefined;
+      const end = this.cast.kind === 'twinkle' ? TWINKLE_END * (this.cast.big ? 2 : 1) : FIZZLE_END;
+      if (this.cast.t > end) this.cast = undefined;
     }
+    this.flash.setAlpha(Math.max(0, this.flash.alpha - dt));
     for (const s of this.sparks) {
       s.life -= dt;
       s.x += s.vx * dt;
@@ -479,8 +645,13 @@ export class SkyScene extends Phaser.Scene {
     this.bolts = this.bolts.filter((b) => (b.life -= dt) > 0);
     for (const p of this.popups) {
       p.life -= dt;
-      p.text.setAlpha(clamp((p.life / p.max) * 3, 0, 1)).setY(p.y0 - (1 - p.life / p.max) * p.rise);
-      if (p.life <= 0) p.text.destroy();
+      const a = clamp((p.life / p.max) * 3, 0, 1), y = p.y0 - (1 - p.life / p.max) * p.rise;
+      p.text.setAlpha(a).setY(y);
+      p.icon?.setAlpha(a).setY(y + p.text.height / 2);
+      if (p.life <= 0) {
+        p.text.destroy();
+        p.icon?.destroy();
+      }
     }
     this.popups = this.popups.filter((p) => p.life > 0);
   }
@@ -491,21 +662,33 @@ export class SkyScene extends Phaser.Scene {
     const g = this.fx.clear();
     const clock = this.playTime;
 
+    // Gust: pale wind streaks sweep across the sky.
+    if (this.gust > 0) {
+      g.fillStyle(0xdcebff, 0.35);
+      for (let i = 0; i < 8; i++) g.fillRect(Math.round(((clock * 120 + i * 97) % (WIDTH + 60)) - 30), 30 + i * 18, 24, 1);
+    }
     // Landing chevrons under every stone past halfway, blinking in the last 20% (steady with reduced motion).
     g.fillStyle(COLORS.ink, 1);
     for (const f of this.foes) {
-      if (f.dead || f.doomed || f.p < 0.5) continue;
+      if (f.dead || f.doomed || !f.target || f.p < 0.5) continue;
       if (!REDUCED && f.p > 0.8 && Math.floor(clock * 8) % 2) continue;
       const x = Math.round(f.target.x);
       g.fillRect(x - 3, GROUND + 4, 1, 1).fillRect(x - 2, GROUND + 5, 1, 1).fillRect(x - 1, GROUND + 6, 3, 1);
       g.fillRect(x + 2, GROUND + 5, 1, 1).fillRect(x + 3, GROUND + 4, 1, 1);
     }
-    // Smoke from roofless cottages; a "z" over stunned towers (shape, not colour).
+    // Smoke from roofless cottages; a "z" over stunned towers (shape, not colour); a dome over warded cottages.
     g.fillStyle(0xa0aac8, 0.5);
     this.cottages.forEach((hits, i) => {
       if (hits !== 1) return;
       const x = COTTAGES_X[i];
       for (let k = 0; k < 3; k++) g.fillRect(x - 2 + Math.round(Math.sin(clock * 2 + k) * 2), GROUND - 14 - k * 4 - Math.round((clock * 6) % 4), 3, 2);
+    });
+    this.wards.forEach((on, i) => {
+      if (!on) return;
+      const x = COTTAGES_X[i];
+      g.lineStyle(1, COLORS.ice, 0.9).beginPath().arc(x, GROUND, 13, Math.PI, 0).strokePath();
+      // An inner dotted arc: the dome reads by shape, not by its colour.
+      for (let a = Math.PI; a <= TAU; a += Math.PI / 10) g.fillStyle(COLORS.ice, 0.9).fillRect(Math.round(x + Math.cos(a) * 10), Math.round(GROUND + Math.sin(a) * 10), 1, 1);
     });
     this.islands.towers.forEach((img, i) => {
       img.setAlpha(this.stun[i] > 0 ? 0.55 : 1);
@@ -526,11 +709,12 @@ export class SkyScene extends Phaser.Scene {
       g.fillStyle(0xb4bbd6, a).fillCircle(p.x - 0.4, p.y - 0.4, p.r);
     }
 
-    // Stones: a faint trail back the way they came, then the sprite.
+    // Threats: hail leaves a faint trail back the way it came.
     for (const f of this.foes) {
       if (f.dead) continue;
-      g.lineStyle(1, COLORS.ice, 0.25).lineBetween(f.x, f.y, lerp(f.x, f.sx, 0.18), lerp(f.y, f.sy, 0.18));
+      if (f.kind === 'hail') g.lineStyle(1, COLORS.ice, 0.25).lineBetween(f.x, f.y, lerp(f.x, f.sx, 0.18), lerp(f.y, f.sy, 0.18));
       f.img.setPosition(Math.round(f.x), Math.round(f.y));
+      f.halo?.setPosition(Math.round(f.x), Math.round(f.y));
     }
     this.drawPlates();
     this.drawWizard();
@@ -542,19 +726,49 @@ export class SkyScene extends Phaser.Scene {
     });
   }
 
-  /** White plates with dark ink. The box's digits underline every plate they could still match. */
+  /**
+   * White plates with dark ink; each kind has its own border, never just a colour. The crow: a double border and a
+   * white diamond stud on each side (outside the plate, where no badge can be mistaken for a plus sign). Ball lightning: a zigzag edge. A split cloud: an underline outside the plate. The box's digits underline
+   * every plate they could still match. Plates never overlap: one that would cover another steps up above it (or
+   * below its stone, at the top of the sky).
+   */
   private drawPlates() {
     const g = this.plates.clear();
     const buffer = this.hud.buffer;
-    for (const f of this.foes) {
+    const placed: { x: number; y: number; w: number; h: number }[] = [];
+    const h = 10, gap = 3;
+    const hits = (x: number, y: number, w: number) => placed.some((r) => x < r.x + r.w + gap && r.x < x + w + gap && y < r.y + r.h + gap && r.y < y + h + gap);
+    // Lowest stones first: they're the most urgent, so their plates stay put.
+    for (const f of [...this.foes].sort((a, b) => b.y - a.y)) {
       if (f.dead) continue;
-      const w = Math.ceil(f.text.width) + 7, h = 10;
-      const x = Math.round(clamp(f.x - w / 2, 2, WIDTH - w - 2)), y = Math.round(Math.max(TOP + 3, f.y - 20));
+      const crow = f.kind === 'crow';
+      const w = Math.ceil(f.text.width) + (crow ? 9 : 7);
+      const x = Math.round(clamp(f.x - w / 2, crow ? 7 : 2, WIDTH - w - (crow ? 7 : 2)));
+      let y = Math.round(Math.max(TOP + 3, f.y - 20));
+      for (let k = 0; k < 4 && hits(x, y, w); k++) y -= h + gap;
+      if (y < TOP + 3) {
+        y = Math.round(f.y + 10);
+        for (let k = 0; k < 4 && hits(x, y, w); k++) y += h + gap;
+      }
+      placed.push({ x, y, w, h });
       g.fillStyle(COLORS.plateInk, 1).fillRect(x - 1, y - 1, w + 2, h + 2);
       // Urgent: a thicker outline past 60% of the fall.
       if (f.p > 0.6) g.fillRect(x - 2, y - 2, w + 4, h + 4);
       g.fillStyle(COLORS.plate, 1).fillRect(x, y, w, h);
-      if (f.doomed || (buffer && f.fact.str.startsWith(buffer))) g.fillStyle(COLORS.plateInk, 1).fillRect(x + 2, y + h - 2, w - 4, 1);
+      g.fillStyle(COLORS.plateInk, 1);
+      if (crow) {
+        g.lineStyle(1, COLORS.plateInk, 1).strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
+        for (const cx of [x - 4, x + w + 3]) {
+          diamond(g, cx, y + 5, 4, COLORS.plateInk);
+          diamond(g, cx, y + 5, 3, COLORS.plate);
+        }
+      }
+      // Marks outside the plate are white, or they'd vanish against the night sky.
+      g.fillStyle(COLORS.plate, 1);
+      if (f.kind === 'ball') for (let i = 0; i < w; i += 4) g.fillRect(x + i, y - 3, 2, 1).fillRect(x + i + 2, y + h + 2, 2, 1);
+      if (f.kind === 'cloud') g.fillRect(x + 1, y + h + 2, w - 2, 1);
+      g.fillStyle(COLORS.plateInk, 1);
+      if (f.doomed || (buffer && f.fact.str.startsWith(buffer))) g.fillRect(x + 2, y + h - 2, w - 4, 1);
       f.text.setPosition(x + w / 2, y + 0.5);
     }
   }
@@ -564,15 +778,16 @@ export class SkyScene extends Phaser.Scene {
     const c = this.cast;
     const bob = Math.round(Math.sin(this.playTime * 1.6) * 0.6);
     let dx = 0, dy = bob;
-    if (c?.kind === 'twinkle') dy -= 1;
+    if (c?.kind === 'twinkle') dy -= c.big ? 2 : 1;
     if (c?.kind === 'fizzle') dx = Math.floor(c.t / 0.05) % 2 ? 1 : -1;
     wiz.setPosition(WIZARD.x + dx, WIZARD.y + dy);
     this.islands.cloud.setY(WIZARD.y + 10 + bob);
     if (c?.kind === 'twinkle') {
       const tip = this.wandTip();
-      // Grows over the twinkle, then shrinks as the towers fire.
-      const k = c.t < PLAY.twinkle ? c.t / PLAY.twinkle : 1 - (c.t - PLAY.twinkle) / (TWINKLE_END - PLAY.twinkle);
-      this.star(this.top, tip.x + dx, tip.y + dy, 1 + k * 4, COLORS.bolt);
+      // Grows over the twinkle, then shrinks as the towers fire. The Thunderclap's is twice the size and length.
+      const end = TWINKLE_END * (c.big ? 2 : 1), peak = PLAY.twinkle;
+      const k = c.t < peak ? c.t / peak : 1 - (c.t - peak) / (end - peak);
+      this.star(this.top, tip.x + dx, tip.y + dy, 1 + k * (c.big ? 8 : 4), COLORS.bolt);
     }
   }
 
@@ -597,4 +812,48 @@ export class SkyScene extends Phaser.Scene {
       g.lineStyle(w, col, a).strokePoints(pts, false);
     }
   }
+}
+
+export interface SpawnOpts {
+  fact?: Fact;
+  x?: number;
+  y?: number;
+  target?: Target;
+  fallMul?: number;
+  /** The crow's direction: 1 flies right, -1 left. */
+  dir?: number;
+}
+
+/** A pixel diamond of radius `r` centred on (cx, cy). */
+function diamond(g: Phaser.GameObjects.Graphics, cx: number, cy: number, r: number, color: number) {
+  g.fillStyle(color, 1);
+  for (let dy = -r + 1; dy < r; dy++) {
+    const half = r - 1 - Math.abs(dy);
+    g.fillRect(cx - half - 0.5, cy + dy - 0.5, 2 * half + 1, 1);
+  }
+}
+
+/**
+ * A 1 px pale outline around a sprite's silhouette, so a dark sprite (the black crow) reads against the night sky.
+ * The texture is 18×18: the sprite's 16×16 plus a pixel all round.
+ */
+function bakeHalo(scene: Phaser.Scene, key: string, out: string) {
+  if (scene.textures.exists(out)) return;
+  const src = scene.textures.get(key).getSourceImage() as HTMLImageElement;
+  const c = document.createElement('canvas');
+  c.width = c.height = 16;
+  const cg = c.getContext('2d')!;
+  cg.drawImage(src, 0, 0);
+  const d = cg.getImageData(0, 0, 16, 16).data;
+  const tex = scene.textures.createCanvas(out, 18, 18);
+  if (!tex) return;
+  const g = tex.getContext();
+  g.fillStyle = '#dfe6ff';
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      if (d[(y * 16 + x) * 4 + 3] < 40) continue;
+      for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) g.fillRect(x + 1 + dx, y + 1 + dy, 1, 1);
+    }
+  }
+  tex.refresh();
 }

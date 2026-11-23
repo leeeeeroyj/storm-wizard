@@ -9,6 +9,8 @@ export interface Input {
   digits: string[];
   /** Backspaces pressed. */
   undo: number;
+  /** The Thunderclap: Space, or Y on a controller. */
+  clap: boolean;
   mute: boolean;
   device: Device;
 }
@@ -18,9 +20,9 @@ const DEADZONE = 0.55;
 const BTN = { A: 0, B: 1, Y: 3, BACK: 8, START: 9, LEFT: 14, RIGHT: 15 } as const;
 
 /**
- * Keyboard: the digit keys (top row or numpad), Backspace and M. Controller: the digit arc. Point the left stick at
- * a digit (or step with the D-pad), A enters it, B deletes, Back mutes. Key presses are kept until the next read, so
- * a tap shorter than a frame isn't lost. Construct one per scene.
+ * Keyboard: the digit keys (top row or numpad), Backspace, Space (Thunderclap) and M. Controller: the digit arc.
+ * Point the left stick at a digit (or step with the D-pad), A enters it, B deletes, Y claps, Back mutes. Key presses
+ * are kept until the next read, so a tap shorter than a frame isn't lost. Construct one per scene.
  */
 export class Controls {
   device: Device = window.matchMedia?.('(pointer: coarse)').matches ? 'touch' : 'kbm';
@@ -33,9 +35,9 @@ export class Controls {
   constructor(private readonly scene: Phaser.Scene) {
     scene.input.keyboard?.on('keydown', (e: KeyboardEvent) => {
       if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
-      if (/^[0-9]$/.test(e.key) || e.key === 'Backspace' || e.code === 'KeyM') {
+      if (/^[0-9]$/.test(e.key) || e.key === 'Backspace' || e.code === 'KeyM' || e.code === 'Space') {
         e.preventDefault();
-        this.queue.push(e.key === 'Backspace' ? 'undo' : e.code === 'KeyM' ? 'mute' : e.key);
+        this.queue.push(e.key === 'Backspace' ? 'undo' : e.code === 'KeyM' ? 'mute' : e.code === 'Space' ? 'clap' : e.key);
       }
     });
     scene.input.on('pointerdown', (p: Phaser.Input.Pointer) => (this.device = p.wasTouch ? 'touch' : 'kbm'));
@@ -47,10 +49,11 @@ export class Controls {
   }
 
   read(dt: number): Input {
-    const out: Input = { digits: [], undo: 0, mute: false, device: this.device };
+    const out: Input = { digits: [], undo: 0, clap: false, mute: false, device: this.device };
     for (const k of this.queue) {
       if (k === 'undo') out.undo++;
       else if (k === 'mute') out.mute = true;
+      else if (k === 'clap') out.clap = true;
       else out.digits.push(k);
     }
     if (this.queue.length) this.device = 'kbm';
@@ -77,6 +80,7 @@ export class Controls {
       }
       if (edge(BTN.A)) out.digits.push(ARC_DIGITS[this.arc]);
       if (edge(BTN.B)) out.undo++;
+      if (edge(BTN.Y)) out.clap = true;
       if (edge(BTN.BACK)) out.mute = true;
     }
     this.prevButtons = down;

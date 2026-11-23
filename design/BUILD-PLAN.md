@@ -314,37 +314,34 @@ Each one ends playable, tested, committed, pushed and live.
 - **2026-11-22 Stones start just under the cloud deck** (y = TOP + 22), not at the top bar, so the plate above a new stone never covers it. Fall times scale with the shorter drop, so speeds are unchanged.
 - **2026-11-22 No zero operands in + and −.** `14 + 0` teaches nothing. Answers of 0 (`5 − 5`) stay.
 - **2026-11-22 The controller arc's x radius shrank to 30** so its 1 and 0 sit beside the answer box, clear of the wizard.
+- **2026-11-22 The crow's badge moved outside its plate.** The mockup's star, and then a diamond, read as a plus sign in front of the first number (`✚12 × 12`). The crow's plate now has its double border and a white diamond stud on each side, clear of the digits.
+- **2026-11-22 Plate marks outside the plate are white.** The mockup drew ball lightning's zigzag edge and the split cloud's underline in dark ink, which vanished against the night sky.
+- **2026-11-22 Plates never overlap.** Lowest stones keep their plates in place, and a plate that would cover another steps up above it (or below its stone at the top of the sky). Burst shards spread 24 px apart and stagger, and the burst cloud's fact shows above them.
+- **2026-11-22 The Thunderclap scores at the multiplier it spends,** and the twinkle and hop are twice the size. Strikes carry the multiplier from the moment of the answer, so a landing during the twinkle can't change the points.
+- **2026-11-22 Until waves arrive (milestone 4), the roster joins by spawn count:** a cloud every fourth stone from the fourth, ball lightning every fifth from the ninth, a crow every ninth from the seventh. The crow doesn't count towards the on-screen cap.
 
 ## Open questions
 
 - **Ball lightning and towers.** The user kept the current picks and will revisit them if they don't feel right in play.
 
-## Status (2026-11-22: milestone 2 built and verified)
+## Status (2026-11-22: milestone 3 built and verified)
 
-- **Done:** Part A, and milestones 1 and 2. Milestone 1 is live at https://leeeeeroyj.github.io/storm-wizard/.
-- **Milestone 2 (first playable):**
-  - `facts.ts`: fact pools, the prefix-safe weighted picker and Leitner boxes (in memory for now; saved in milestone 4).
-  - `answer.ts`: match, misfire and stale prefix.
-  - `controls.ts`: digits latched until read, Backspace, M, and the controller's digit arc (stick or D-pad, A, B, Back).
-  - `synth.ts` (from Overtone), `sfx.ts` and `music.ts`: digit plucks, correct (climbing with the streak), double, misfire, blast, landing and lost-cottage sounds, and the calm layer of the music.
-  - The Sky scene:
-    - hail with plates, landing chevrons and urgent outlines;
-    - the wand's twinkle, then bolts from the nearest working tower;
-    - blasts and chains;
-    - cottages (roof, then rubble) and stunned towers;
-    - the missed fact shown big;
-    - the streak multiplier;
-    - a first game-over panel with the facts to practise, which returns to the title.
-  - It plays wave 1's numbers without end. Waves, retry, pause and saving the high score are milestone 4.
+- **Done:** Part A, and milestones 1–3. Milestone 2 is live at https://leeeeeroyj.github.io/storm-wizard/.
+- **Milestone 3 (full roster):**
+  - **Split cloud:** drifts to mid-sky and bursts into three new stones, its fact missed and shown. Answered, it scores 100 and blasts at radius 20.
+  - **Ball lightning:** zigzags, is immune to chains, scores 150 and crackles as it arrives.
+  - **Storm Crow:** crosses high with a stretch problem from one range up. It has a pale halo, never attacks, and leaves no mark on its fact if it escapes. Answered, it scores 250 and gives a gift (Gust, Mend or Ward), each with its icon.
+  - **Gifts:** Gust slows the sky to 40% for 6 s with wind streaks. Mend rebuilds a step or scores 500. Ward puts a dome (solid and dotted arcs) over the most threatened cottage and pops on the next hit.
+  - **Thunderclap:** Space or Y at ×4. It strikes everything but the crow with a flash, a shake, a big twinkle and a D minor boom, and spends the streak.
+  - **HUD:** streak pips, and a bolt sign with the key (SPACE, Y or TAP ⚡) when the Thunderclap is ready.
+  - **Sounds:** clap, gift, ward, caw, crackle and split.
 - **Verified:**
-  - `m2-test` 23/23:
-    - the pure rules: no negative differences, exact division, no prefix pair in 3,000 picks, missed facts back in 2–4 spawns, box moves, the answer rules;
-    - in the game: the wizard's place, the twinkle then the bolt from the nearest tower, the misfire and its lockout, Backspace, equal answers, chains (not counted for drilling), landings and the fact popup, stunned towers, the silent stale clear, the controller arc, game over and the return to the title.
-  - `m1-test` 11/11 (its wizard check now looks beside the box).
-  - Screenshots looked at.
-- **Philosophy checklist at milestone 2:**
-  - **The verb:** typing an answer and seeing the bolt land feels immediate; there's no Enter to slow it.
-  - **Fair:** chevrons warn before every landing, and a miss always shows the fact.
-  - **Risk and reward:** the streak multiplier is in; the Thunderclap arrives in milestone 3.
-  - **Readable for colour-blind players:** plates are white on dark ink. Misfire and twinkle differ by shape and motion. Damage shows by sprite shape, and a stunned tower by a "z" and transparency.
-- **Next:** milestone 3, the full roster (split cloud, Storm Crow and gifts, ball lightning, the Thunderclap).
+  - `m3-test` 21/21:
+    - the roster ramp; the split cloud answered and burst (no prefix pair among the shards);
+    - ball lightning's zigzag and chain immunity;
+    - the crow's stretch problem, halo, gifts (Ward, Mend both ways, Gust's slowdown), chain immunity and escape;
+    - a ward absorbing a hit;
+    - the Thunderclap's gating, HUD sign, points, crow immunity and no drilling credit, and Y on a controller.
+  - `m2-test` 23/23 and `m1-test` 11/11.
+  - Screenshots looked at, which found the plate-overlap and badge problems above, now fixed.
+- **Next:** milestone 4, structure: settings on the title screen, `waves.ts`, saving the Leitner boxes with the mastery grid, wave clear and rebuilding, game over and retry, pause, and the high score.

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ANSWER_BOX, ARC, ARC_DIGITS, COLORS, HUD_SCALE, TEXT, TOP, WIDTH } from '../config';
+import { ANSWER_BOX, ARC, ARC_DIGITS, COLORS, HUD_SCALE, TEXT, THUNDERCLAP, TOP, WIDTH } from '../config';
 import { label } from '../text';
 import { fitCamera } from '../view';
 import type { HudState } from './SkyScene';
@@ -17,6 +17,7 @@ export class HudScene extends Phaser.Scene {
   private wave!: Phaser.GameObjects.Text;
   private hi!: Phaser.GameObjects.Text;
   private answer!: Phaser.GameObjects.Text;
+  private clapKey!: Phaser.GameObjects.Text;
   private arc: Phaser.GameObjects.Text[] = [];
   private clock = 0;
 
@@ -35,6 +36,7 @@ export class HudScene extends Phaser.Scene {
     this.wave = t(W / 2, 5, 16, TEXT.ink, 'center');
     this.hi = t(W - 80, 7, 13, TEXT.dim, 'right');
     this.answer = t(W / 2, ANSWER_BOX.y * U + 4, 20, TEXT.plateInk, 'center');
+    this.clapKey = t(196, 8, 12, TEXT.bolt);
     // The controller's digit arc: 1 to 9 then 0, left to right, opening upwards over the answer box.
     this.arc = ARC_DIGITS.map((d, i) => {
       const { x, y } = arcPoint(i);
@@ -49,6 +51,8 @@ export class HudScene extends Phaser.Scene {
     this.score.setText(String(s.score).padStart(6, '0'));
     this.mult.setText(`×${s.mult}`).setColor(s.mult >= 4 ? TEXT.bolt : TEXT.ink);
     this.wave.setText(`WAVE ${s.wave}`);
+    const ready = s.mult >= THUNDERCLAP.mult && !s.attract && !s.over;
+    this.clapKey.setVisible(ready).setText(s.device === 'pad' ? 'Y' : s.device === 'touch' ? 'TAP ⚡' : 'SPACE');
     this.hi.setText(`HI ${String(s.hi).padStart(6, '0')}`);
     const misfired = s.misfireT > 0;
     this.answer.setText(misfired ? s.misfire : s.buffer).setColor(misfired ? TEXT.dim : TEXT.plateInk);
@@ -58,6 +62,17 @@ export class HudScene extends Phaser.Scene {
     const g = this.g.clear();
     g.fillStyle(COLORS.bar, 0.85).fillRect(0, 0, W, BAR);
     g.fillStyle(COLORS.line, 1).fillRect(0, BAR, W, U);
+    // The streak: three pips fill towards the next ×, then reset (a filled bar, or a low dash when empty: shape, not colour).
+    g.fillStyle(COLORS.ink, 1);
+    for (let i = 0; i < 3; i++) {
+      const on = s.mult < 8 && s.streak % 3 > i;
+      if (on) g.fillRect(146 + i * 10, 9, 6, 12);
+      else g.fillRect(146 + i * 10, 18, 6, 3);
+    }
+    if (ready) {
+      // Thunderclap ready: a bolt glyph and its key.
+      g.fillStyle(COLORS.bolt, 1).fillRect(182, 5, 4, 7).fillRect(180, 12, 8, 2).fillRect(182, 14, 4, 9).fillRect(180, 19, 2, 2);
+    }
     if (!s.attract) {
       // II (pause) and the speaker; muted will add a cross over it (shape, not colour).
       g.fillStyle(COLORS.ink, 1);

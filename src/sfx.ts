@@ -64,6 +64,42 @@ export class Sfx {
     if (lost) this.synth.voice('triangle', hz(50), hz(49), 0.8, 0.1);
   }
 
+  /** The Thunderclap: a big D minor chord over a boom. */
+  clap() {
+    this.synth.noise(0.35, 1.1, 'lowpass', 500);
+    for (const m of [50, 62, 65, 69, 74]) this.synth.voice('sawtooth', hz(m), hz(m), 1.0, 0.04, undefined, { cutoff: [3000, 400] });
+    this.synth.voice('sine', 80, 30, 0.9, 0.35);
+  }
+
+  /** A gift from the crow: a rising run. */
+  gift() {
+    const t = this.synth.now;
+    for (let i = 0; i < 5; i++) this.pluck(deg(i * 2, 74), 0.08, 0.4, t + i * 0.07);
+  }
+
+  /** A ward takes a hit: a bright fifth. */
+  ward() {
+    for (const m of [69, 74]) this.pluck(m, 0.08, 0.4);
+  }
+
+  /** The Storm Crow appears: a two-note caw. */
+  caw() {
+    const t = this.synth.now;
+    this.synth.voice('square', 900, 600, 0.08, 0.03, t, { cutoff: [3000, 1500] });
+    this.synth.voice('square', 850, 560, 0.09, 0.03, t + 0.12, { cutoff: [3000, 1500] });
+  }
+
+  /** Ball lightning arrives: a dry crackle. */
+  crackle() {
+    const t = this.synth.now;
+    for (let i = 0; i < 4; i++) this.synth.noise(0.05, 0.03, 'highpass', 4000, t + i * 0.04);
+  }
+
+  /** A split cloud bursts: a whoosh. */
+  split() {
+    this.synth.noise(0.08, 0.35, 'bandpass', 700, undefined, 2);
+  }
+
   /** The storm wins: a falling phrase. */
   over() {
     const t = this.synth.now;

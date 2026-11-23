@@ -85,6 +85,28 @@ export const PLAY = {
   spawnY: TOP + 22,
 };
 
+/** The roster beyond plain hail. */
+export const ROSTER = {
+  /** A split cloud drifts down to here (mid-sky), then bursts into three stones with new problems. */
+  cloud: { burstY: 104, fallMul: 0.55, blast: 20, shards: 3, shardFallMul: 0.55, shardSpread: 24 },
+  /** Ball lightning falls a little faster and zigzags (amplitude px, swings per fall); chains can't catch it. */
+  ball: { fallMul: 0.9, zigzag: 22, swings: 2.5 },
+  /** The Storm Crow crosses high (y range, px/s) with a stretch problem; it never attacks. */
+  crow: { y: [34, 44] as const, speed: 42 },
+};
+
+/** The Storm Crow's gifts. */
+export const GIFTS = {
+  /** Everything in the sky moves at this fraction of its speed, for this long. */
+  gust: { slow: 0.4, time: 6 },
+  /** Mend rebuilds one step of the most damaged cottage, or scores this if none is damaged. */
+  mendScore: 500,
+};
+export type Gift = 'gust' | 'mend' | 'ward';
+
+/** The Thunderclap: available from this multiplier; strikes everything but the crow and spends the streak. */
+export const THUNDERCLAP = { mult: 4 };
+
 /** The controller's digit arc, opening upwards over the answer box, clear of the wizard. */
 export const ARC = { cx: 208, cy: 216, r: 30 };
 export const ARC_DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
