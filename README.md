@@ -14,7 +14,7 @@ An arcade math game: hail falls on the sky islands, and every stone carries a su
 ![Vite](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-![Storm Wizard: a lightning bolt from the left tower bursts a hailstone under the cloud deck, while the wizard waits on his small cloud beside the answer box, below three floating islands with cottages and towers](docs/screenshot.png)
+![Storm Wizard: a lightning bolt from the middle tower bursts a hailstone for 150 points. Above it, a storm crow carries 11 × 12 between two diamonds, a split cloud carries 8 + 5 over an underline, ball lightning carries 9 × 3 between dashed lines, and hailstones carry 7 × 8 and 9 + 6. Below, three floating islands hold towers and blue cottages facing the middle, one without its roof and one in rubble, and the wizard waits on his small cloud beside the answer box](docs/screenshot.png)
 
 </div>
 
@@ -53,7 +53,7 @@ Storm Wizard is an original arcade game inspired by the mechanics of Atari's 198
 
 **It learns what you know.** Every fact has a box from 0 to 4. A quick right answer moves it up, and a miss sends it back to 0 and brings it round again a few stones later. Facts you're still learning come up more often. The title screen's grid shows them all: a dot for a fact you haven't met, a square that fills as you learn it, and a slash for one you missed last time. All of this stays in your browser.
 
-Touch controls are on the way.
+**On a phone or tablet** the number keys appear beside the game (1–5 and ⌫ on the left, 6–0 and ⚡ on the right) or, on a squarer screen, in a row below it. Turn a phone sideways to play.
 
 ## Controls
 
@@ -61,13 +61,13 @@ Touch controls are on the way.
 |---|---|---|---|
 | Change a setting | Arrows to move, Space to change, or click it | D-pad or stick to move, A to change | Tap it |
 | Start | Enter, or click START | Start, or A on START | Tap START |
-| Type a digit | 0–9 (top row or numpad) | Point the left stick at a digit on the arc (or step with the D-pad), then A | coming soon |
-| Delete a digit | Backspace | B | coming soon |
-| Thunderclap (at ×4 or more) | Space | Y | coming soon |
-| Pause | P or Esc, or click **II** | Start | coming soon |
-| Back to the title (paused, or after a game) | Esc | B | coming soon |
+| Type a digit | 0–9 (top row or numpad) | Point the left stick at a digit on the arc (or step with the D-pad), then A | Tap a number key |
+| Delete a digit | Backspace | B | Tap ⌫ |
+| Thunderclap (at ×4 or more) | Space | Y | Tap ⚡ (solid when ready, dashed until then) |
+| Pause | P or Esc, or click **II** | Start | Tap **II** |
+| Back to the title (paused, or after a game) | Esc | B | Tap **TITLE** |
 | Try again | Enter or Space, or click the panel | A or Start | Tap the panel |
-| Sound on or off | M, or click the speaker | Back | coming soon |
+| Sound on or off | M, or click the speaker | Back | Tap the speaker |
 
 ## Run it locally
 
@@ -100,6 +100,7 @@ src/
   tune.ts        the music as notes: layers, the flute line, a key per wave band
   sky.ts         the sky, clouds, rain and islands, drawn in code
   islands.ts     towers, cottages and the wizard
+  touch.ts       the touch number keys, and fitting the game into the room they leave
   scenes/        Title, Sky (the game) and Hud
 tools/           sprite picker (sprites.py) and the headless-Chrome tests
 ```

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ARC_DIGITS } from './config';
+import { touchPad } from './touch';
 
 export type Device = 'kbm' | 'pad' | 'touch';
 
@@ -35,7 +36,7 @@ const KEYS: Record<string, string> = {
 /**
  * Keyboard: the digit keys (top row or numpad), Backspace, Space (Thunderclap), Enter, Escape, P, M and the arrows.
  * Controller: the digit arc. Point the left stick at a digit (or step with the D-pad), A enters it, B deletes, Y
- * claps, Start pauses, Back mutes. Key presses are kept until the next read, so a tap shorter than a frame isn't
+ * claps, Start pauses, Back mutes. Touch: the number keys beside or below the game (`touch.ts`). Key presses are kept until the next read, so a tap shorter than a frame isn't
  * lost. Construct one per scene.
  */
 export class Controls {
@@ -79,6 +80,14 @@ export class Controls {
     }
     if (this.queue.length) this.device = 'kbm';
     this.queue = [];
+    // The touch number keys.
+    const touched = touchPad.take();
+    for (const k of touched) {
+      if (k === 'undo') out.undo++;
+      else if (k === 'clap') out.clap = true;
+      else out.digits.push(k);
+    }
+    if (touched.length) this.device = 'touch';
 
     const pad = this.pad();
     const down = new Set(pad ? pad.buttons.filter((b) => b.pressed).map((b) => b.index) : []);

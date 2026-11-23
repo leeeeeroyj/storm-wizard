@@ -325,37 +325,30 @@ Each one ends playable, tested, committed, pushed and live.
 - **2026-11-22 The mute state lives in `synth.ts`, not in `sound.mute`.** Phaser applies `sound.mute` through a gain that only updates on the audio thread, so reading it back straight after setting it gives the old value. The toggle copied from Overtone saved the opposite of what it set. Overtone has the same code, and its fix is left to that repo.
 - **2026-11-22 The music is composed in a pure `tune.ts`** (notes per step, given the lead, danger and band) and voiced by `music.ts`, so tests check the composition without audio. Danger is latched at bar lines.
 - **2026-11-22 Under reduced motion the wizard's twinkle-hop stays;** it's part of answering and only 1–2 px. The idle bob, the START pulse and the cursor blink stop, along with shake and flash.
+- **2026-11-23 The cottage is #289704** (the user's pick after playing), a blue cottage whose door faces left. The three left of the middle tower are flipped so every door faces the middle.
+- **2026-11-23 The touch keys are page elements, not canvas drawings,** so they sit beside or below the game instead of over the sky. On a touch screen the game is fitted into the room the keys leave, so nothing moves when they appear. `layoutFor` picks side columns or a bottom row, whichever leaves the game bigger; keys are 56–96 CSS px. Pressed keys turn over (light with dark ink), ⚡ is dashed and faint until ×4 and solid after, and the digits dim during a misfire's lockout. Shape and contrast, never hue alone.
+- **2026-11-23 Touch gets a way back to the title:** RESUME and TITLE buttons on the pause panel, and a TITLE button on the game-over panel. The II and speaker take a thumb-sized area around them.
 - **2026-11-22 A new banner replaces the last** (wave start, wave clear, Thunderclap), so two never overlap.
 
 ## Open questions
 
 - **Ball lightning and towers.** The user kept the current picks and will revisit them if they don't feel right in play.
 
-## Status (2026-11-22: milestone 5 built and verified)
+## Status (2026-11-23: milestone 6 built and verified in emulation; a real phone and tablet next)
 
-- **Done:** Part A, and milestones 1–5. Milestone 4 is live at https://leeeeeroyj.github.io/storm-wizard/.
-- **Milestone 5 (music and feedback):**
-  - **`tune.ts` and `music.ts`:**
-    - the calm layer;
-    - the flute lead from wave 2;
-    - the danger layer (kick, snare, hats, rumble) while a stone is past 55%, switching at bar lines;
-    - G Dorian for waves 4–6 and A Dorian with a busier arpeggio from wave 7;
-    - the title theme at 92 BPM.
-  - **New sounds:**
-    - wave-clear and new-high-score stingers (the fanfare 1.3 s after the game-over phrase);
-    - rebuilt, pause and resume;
-    - menu step and choose.
-  - **Feedback:**
-    - twinkles over standing cottages at wave clear and over a rebuilt one;
-    - a bigger burst and a shockwave when a cottage is flattened.
-  - **Reduced motion:** no shake or flash, fewer sparks, steady chevrons, cursor and START, and a still wizard.
+- **Done:** Part A, and milestones 1–6. Milestone 5 is live at https://leeeeeroyj.github.io/storm-wizard/.
+- **Milestone 6 (touch and mobile):**
+  - **`touch.ts`:** number keys beside the game on a phone held sideways (1–5 and ⌫ left, 6–0 and ⚡ right), and a row below it on a tablet.
+  - **Pause and game over on touch:** RESUME and TITLE buttons on the pause panel, a TITLE button at game over, and bigger II and speaker targets.
+  - **The cottage:** the user's new pick, facing the middle.
 - **Verified:**
-  - `m5-test` 19/19:
-    - the tune's layers, lead, danger, bands and busy arpeggio;
-    - the title theme running and the menu sounds;
-    - the game's music state following danger, wave 2 and wave 4;
-    - pause, clear, rebuild, game-over and new-high-score sounds, and the music holding at game over;
-    - reduced motion.
-  - `m1`–`m4` tests 11/11, 23/23, 21/21 and 35/35.
+  - `m6-test` 17/17 at 844×390 (side keys) and 17/17 at 1024×768 (bottom row):
+    - the layout, key sizes, and keys on screen and clear of the game;
+    - no keys on the title, in pause or at game over;
+    - typing, ⌫ and striking with the keys;
+    - ⚡ dashed then solid, and the Thunderclap;
+    - II, RESUME, the speaker, TITLE, and game over's TITLE;
+    - the cottages facing the middle.
+  - `m1`–`m5` tests 11/11, 23/23, 21/21, 35/35 and 19/19. `m2` failed once on a timing check under load and passed on both reruns.
   - Screenshots looked at.
-- **Next:** milestone 6, touch and mobile. Number keys in the letterbox bars at 844×390, a bottom row on 4:3 screens, II and speaker tap targets, the CDP touch test at two phone sizes, then a real phone (needs the user).
+- **Next:** the user tries a real phone and tablet. Then milestone 7, attract mode with the pilot, and Arcadia's demo and phone loop.

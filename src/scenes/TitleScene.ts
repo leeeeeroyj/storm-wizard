@@ -9,6 +9,7 @@ import { masteryFor, type Cell } from '../mastery';
 import { loadMemory, loadSettings, saveSettings } from '../memory';
 import { Backdrop } from '../sky';
 import { Music } from '../music';
+import { touchPad } from '../touch';
 import { Sfx } from '../sfx';
 import { restoreMute, Synth } from '../synth';
 import { label } from '../text';
@@ -181,6 +182,7 @@ export class TitleScene extends Phaser.Scene {
     this.backdrop.update(dt);
     this.warnT = Math.max(0, this.warnT - dt);
     const input = this.controls.read(dt);
+    touchPad.update({ show: false, clap: false, locked: false });
     // Enter (or Start on a controller) begins from anywhere; Space or A changes the focused setting (or starts, on START).
     const padA = input.confirm && input.device === 'pad' && !input.pause;
     if (input.confirm && !padA) this.begin();

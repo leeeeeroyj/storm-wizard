@@ -1,7 +1,7 @@
 {
   "wizard": {"subjects": ["storm mage", "wizard", "chibi wizard"], "picks": [1212350, 1388269, 1388279, 1388293, 1388296, 233215, 233226, 233248], "browse": 64, "chosen": 233226},
   "tower": {"subjects": ["wizard tower", "castle tower", "watchtower"], "picks": [1389214, 1389215, 1389220, 1389229, 1389231, 1389245, 204714, 204717], "browse": 64, "chosen": 1389231},
-  "cottage": {"subjects": ["cottage", "tiny house", "log cabin"], "picks": [289689, 289690, 289704, 289715, 289719, 289731, 289743, 1279723], "browse": 64, "chosen": 289731},
+  "cottage": {"subjects": ["cottage", "tiny house", "log cabin"], "picks": [289689, 289690, 289704, 289715, 289719, 289731, 289743, 1279723], "browse": 64, "chosen": 289704},
   "rubble": {"subjects": ["rubble pile", "rubble chunk"], "picks": [1030835, 1030842, 1030850, 1030854, 1030865, 1030873, 1030881, 1030894], "browse": 64, "chosen": 1030835},
   "hailstone": {"subjects": ["hailstone", "ice bomb"], "picks": [563486, 563490, 563500, 563515, 563524, 563530, 563536, 563544], "browse": 64, "chosen": 563486},
   "splitcloud": {"subjects": ["storm cloud", "thundercloud", "rain cloud"], "picks": [1211587, 1211612, 1211615, 1275566, 1275569, 1275583, 1275585, 1275592], "browse": 64, "chosen": 1275566},

@@ -16,6 +16,7 @@ import { Sfx } from '../sfx';
 import { Backdrop, mulberry32 } from '../sky';
 import { isMuted, restoreMute, Synth, toggleMute } from '../synth';
 import { label } from '../text';
+import { touchPad } from '../touch';
 import { fitCamera } from '../view';
 
 /** What the HUD draws, shared through the registry under `hud`. */
@@ -141,6 +142,8 @@ export class SkyScene extends Phaser.Scene {
   /** This game set a new high score. */
   newHi = false;
   private overPrompt: Phaser.GameObjects.Text | undefined;
+  /** Touch's TITLE button on the game-over panel. */
+  private overExtras: Phaser.GameObjects.GameObject[] = [];
   private leaving = false;
   private nextSpawn = 0;
   private sparks: Spark[] = [];
@@ -187,6 +190,7 @@ export class SkyScene extends Phaser.Scene {
     this.paused = false;
     this.newHi = false;
     this.overPrompt = undefined;
+    this.overExtras = [];
     this.leaving = false;
     this.stateT = 0;
     this.cottages = COTTAGES_X.map(() => 0);
@@ -218,17 +222,20 @@ export class SkyScene extends Phaser.Scene {
     }
     // The HUD's II and speaker, a tap on the game-over panel, and the tab being hidden.
     const ev = this.game.events;
-    const onPause = () => this.togglePause(), onMute = () => this.toggleMute(), onConfirm = () => this.confirm();
+    const onPause = () => this.togglePause(), onMute = () => this.toggleMute(), onConfirm = () => this.confirm(), onQuit = () => this.quit();
     const onHidden = () => !this.paused && this.state !== 'over' && this.togglePause();
     ev.on('storm:pause', onPause);
     ev.on('storm:mute', onMute);
     ev.on('storm:confirm', onConfirm);
+    ev.on('storm:quit', onQuit);
     ev.on(Phaser.Core.Events.HIDDEN, onHidden);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.music.stop();
       ev.off('storm:pause', onPause);
       ev.off('storm:mute', onMute);
       ev.off('storm:confirm', onConfirm);
+      ev.off('storm:quit', onQuit);
+      touchPad.update({ show: false, clap: false, locked: false });
       ev.off(Phaser.Core.Events.HIDDEN, onHidden);
     });
 
@@ -256,6 +263,7 @@ export class SkyScene extends Phaser.Scene {
   update(_time: number, delta: number) {
     const dt = Math.min(0.05, delta / 1000);
     if (this.controls) this.handleInput(this.controls.read(dt));
+    if (!this.attract) touchPad.update({ show: !this.paused && this.state !== 'over', clap: this.hud.mult >= THUNDERCLAP.mult, locked: this.lockout > 0 });
     // Paused: everything holds still, the music too.
     if (this.paused) return;
     this.playTime += dt;
@@ -274,6 +282,7 @@ export class SkyScene extends Phaser.Scene {
     else if (this.state === 'clear' && this.stateT > 2.6) this.startWave(this.wave.wave + 1);
     else if (this.state === 'over') {
       this.overPrompt?.setVisible(this.stateT > 1);
+      for (const o of this.overExtras) (o as Phaser.GameObjects.Text).setVisible(this.stateT > 1);
       // Attract mode starts a new demo by itself (milestone 7 hands this to the cabinet).
       if (this.attract && this.stateT > 4) this.scene.restart({ attract: Math.floor(this.rand() * 2 ** 31) });
     }
@@ -705,6 +714,13 @@ export class SkyScene extends Phaser.Scene {
     const dev = this.hud.device;
     const prompt = dev === 'pad' ? 'A TO TRY AGAIN   B FOR THE TITLE' : dev === 'touch' ? 'TAP TO TRY AGAIN' : 'ENTER TO TRY AGAIN   ESC FOR THE TITLE';
     this.overPrompt = label(this, cx, 146, this.attract ? '' : prompt, 7, TEXT.ink, { align: 'center' }).setDepth(d).setVisible(false);
+    // Touch has no Escape: a TITLE button on the panel's corner (a tap anywhere else tries again).
+    if (dev === 'touch' && !this.attract) {
+      const btn = this.add.rectangle(cx + 108, 150.5, 44, 15, COLORS.bar, 1).setStrokeStyle(1, COLORS.ink).setDepth(d).setVisible(false);
+      const txt = label(this, cx + 108, 146, 'TITLE', 7, TEXT.ink, { align: 'center' }).setDepth(d + 0.01).setVisible(false);
+      btn.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.state === 'over' && this.stateT >= 1 && this.quit());
+      this.overExtras = [btn, txt];
+    }
   }
 
   private leave() {

@@ -4,6 +4,7 @@ import { COLORS, HEIGHT, RENDER_SCALE, WIDTH } from './config';
 import { HudScene } from './scenes/HudScene';
 import { SkyScene } from './scenes/SkyScene';
 import { TitleScene } from './scenes/TitleScene';
+import { touchPad } from './touch';
 
 /** Loads the self-hosted fonts (relative URLs, so they work under any base path). */
 function loadFonts() {
@@ -32,8 +33,9 @@ async function start() {
     audio: ATTRACT ? { noAudio: true } : {},
     scene: [TitleScene, SkyScene, HudScene],
   });
+  if (!ATTRACT) touchPad.attach(() => game.scale.refresh());
   // Dev-only handle for poking at the running game from the console or a test script.
-  if (import.meta.env.DEV) Object.assign(window, { __storm: game });
+  if (import.meta.env.DEV) Object.assign(window, { __storm: game, __touch: touchPad });
 }
 
 void start();
