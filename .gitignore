@@ -1,0 +1,11 @@
+.cache/
+node_modules/
+dist/
+__pycache__/
+GAME-CONCEPT-PLAYBOOK.md
+GAME-CONCEPT-PLAYBOOK-v2.md
+GAME-DESIGN-PHILOSOPHY.md
+sprite-stacking.md
+attract-mode.md
+GAME-RUNBOOK.md
+archive/

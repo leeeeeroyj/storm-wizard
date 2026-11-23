@@ -1,0 +1,1311 @@
+<title>Storm Wizard Concept Sheet</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;700;800&family=Atkinson+Hyperlegible+Next:wght@400;700&family=Grenze+Gotisch:wght@700&family=Pirata+One&family=Uncial+Antiqua&display=swap">
+<style>
+/* Layout: a wizard's storm almanac. The live screen leads (type answers, watch the hail), then the choices only the
+   user can make (title face, sprites), then the roster as almanac entries, the rules, the drill, the sound, and the
+   lineage from 1980. One deliberate dark look: a night sky before a storm. Type: a fantasy display face for the name
+   (three on offer), Atkinson Hyperlegible for everything a learner must read, digits above all. */
+:root {
+  --night: #0a0f22;     /* page ground: the sky above the cloud deck */
+  --panel: #131a35;     /* almanac pages */
+  --line: #283361;      /* hairlines, empty cells */
+  --ink: #edf1ff;       /* primary text */
+  --dim: #9ba7d2;       /* secondary text */
+  --bolt: #ffe36e;      /* accent: lightning, selection, points */
+  --ice: #bfe9ff;       /* hail */
+  --font-title: "Grenze Gotisch", "Pirata One", Georgia, serif;
+  --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, "Courier New", monospace;
+  --font-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --step--1: 0.875rem; --step-0: 1rem; --step-1: 1.2rem; --step-2: 1.85rem; --step-3: clamp(2.8rem, 10vw, 6rem);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--night); color: var(--ink); font-family: var(--font-body); font-size: var(--step-0); line-height: 1.55; margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 56px; }
+h1 { font-family: var(--font-title); font-weight: 700; font-size: var(--step-3); line-height: 0.95; color: var(--bolt); margin: 0; letter-spacing: 0.01em; text-shadow: 0 0 24px rgb(255 227 110 / 0.25); }
+h2 { font-family: var(--font-body); font-weight: 700; font-size: var(--step-2); line-height: 1.1; margin: 0; text-wrap: balance; }
+h3 { font-family: var(--font-body); font-weight: 700; font-size: var(--step-1); margin: 0; }
+p { margin: 0; }
+.label { font-family: var(--font-mono); font-weight: 700; font-size: 0.8125rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+.muted { color: var(--dim); }
+kbd, .chip, .mono { font-family: var(--font-mono); font-weight: 700; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px 32px; padding-top: 40px; }
+header.top .pitch { max-width: 60ch; margin-top: 18px; color: var(--dim); font-size: var(--step-1); line-height: 1.45; }
+.actions { display: grid; gap: 8px; justify-items: end; }
+button.primary {
+  font-family: var(--font-mono); font-weight: 800; font-size: 1rem; letter-spacing: 0.06em; text-transform: uppercase;
+  background: var(--bolt); color: var(--night); border: 0; padding: 12px 18px; cursor: pointer; box-shadow: 4px 4px 0 var(--line);
+}
+button.primary:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--line); }
+button:focus-visible, canvas:focus-visible, select:focus-visible { outline: 2px solid var(--ice); outline-offset: 3px; }
+#copy-status { font-size: var(--step--1); color: var(--dim); min-height: 1.5em; }
+#picks-text { width: min(420px, 100%); height: 160px; background: var(--panel); color: var(--ink); border: 1px solid var(--line); font: 12px/1.4 var(--font-mono); }
+
+/* Philosophy card */
+.philo { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 0 28px; background: var(--panel); border: 1px solid var(--line); padding: 4px 20px 16px; }
+.philo div { display: grid; gap: 4px; padding-top: 14px; align-content: start; min-width: 0; }
+.philo strong { font-family: var(--font-mono); color: var(--bolt); font-size: 0.95rem; letter-spacing: 0.04em; text-transform: uppercase; }
+
+/* Screen */
+.screen-block { display: grid; gap: 16px; }
+.section-head { display: grid; gap: 6px; max-width: 72ch; }
+.stage { display: grid; place-items: center; }
+.bezel { width: 100%; background: #04060f; border: 1px solid var(--line); padding: clamp(6px, 1.5vw, 16px); box-shadow: 0 0 0 4px var(--panel), 0 24px 60px -30px #000; }
+#screen { display: block; width: 100%; max-width: 100%; height: auto; aspect-ratio: 416 / 228; image-rendering: pixelated; touch-action: none; background: #04060f; }
+.device { display: none; width: 100%; max-width: 100%; background: #04060f; border: 3px solid var(--line); border-radius: 22px; padding: 10px; }
+.device .keys-col, .device .keys-row { display: grid; gap: 4px; }
+.device.phone { aspect-ratio: 844 / 390; grid-template-columns: 66fr 712fr 66fr; gap: 0; }
+.device.phone .keys-col { grid-template-rows: repeat(6, 1fr); }
+.device.tablet { aspect-ratio: 1024 / 768; max-width: 720px; grid-template-rows: 103fr 561fr 103fr; gap: 0; }
+.device.tablet .keys-row { grid-template-columns: repeat(12, 1fr); align-self: center; height: 70%; }
+.device .slot { min-width: 0; min-height: 0; display: grid; place-items: center; }
+.device .slot canvas { width: 100%; height: auto; }
+.device[data-on="true"] { display: grid; }
+.tkey { font-family: var(--font-mono); font-weight: 800; font-size: clamp(0.9rem, 2.4vw, 1.5rem); background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 0; min-height: 0; cursor: pointer; touch-action: none; }
+.tkey.alt { background: transparent; color: var(--bolt); border-color: var(--bolt); }
+.tkey:active { background: var(--line); }
+.controls { display: grid; gap: 10px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+.row > .label { min-width: 112px; }
+.key { display: inline-flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+kbd { font-size: 0.875rem; min-width: 26px; padding: 3px 6px; text-align: center; background: var(--panel); border: 1px solid var(--line); border-bottom-width: 3px; color: var(--ink); }
+.pad-status { font-size: var(--step--1); color: var(--dim); }
+.pad-status[data-on="true"] { color: var(--ice); }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); }
+.seg button { font-family: var(--font-mono); font-weight: 700; font-size: 0.875rem; background: var(--panel); color: var(--dim); border: 0; padding: 6px 10px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--bolt); color: var(--night); }
+.seg button[aria-pressed="true"]::before { content: "✓ "; }
+.screen-notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 12px 24px; }
+.screen-notes div { display: grid; gap: 2px; min-width: 0; align-content: start; }
+
+/* Title faces */
+.faces { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
+.face { background: var(--panel); border: 1px solid var(--line); color: var(--ink); padding: 18px 16px 14px; cursor: pointer; display: grid; gap: 8px; text-align: left; }
+.face .sample { font-size: clamp(2rem, 5vw, 2.8rem); line-height: 1; color: var(--bolt); }
+.face .name { font-family: var(--font-mono); font-size: 0.8125rem; color: var(--dim); }
+.face[aria-pressed="true"] { border-color: var(--bolt); box-shadow: inset 0 0 0 2px var(--bolt); }
+.face[aria-pressed="true"] .name::after { content: " · chosen"; color: var(--bolt); }
+
+/* Slot panels */
+.section { display: grid; gap: 20px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 16px; }
+.card { background: var(--panel); border: 1px solid var(--line); padding: 16px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.card-head { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
+.hero-sprite { width: 96px; height: 96px; image-rendering: pixelated; background: var(--night); border: 1px solid var(--line); }
+.card-title { display: grid; gap: 4px; min-width: 0; justify-items: start; }
+.chip { font-size: 0.8125rem; color: var(--night); background: var(--bolt); padding: 1px 6px; font-variant-numeric: tabular-nums; }
+.chip.ghost { background: transparent; color: var(--bolt); border: 1px solid var(--bolt); }
+.card p { font-size: 0.95rem; }
+.cands { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.cand { padding: 0; aspect-ratio: 1; background: var(--night); border: 1px solid var(--line); cursor: pointer; display: grid; place-items: center; }
+.cand img { width: 75%; height: 75%; image-rendering: pixelated; }
+.cand:hover { border-color: var(--dim); }
+.cand[aria-pressed="true"] { border-color: var(--bolt); box-shadow: inset 0 0 0 2px var(--bolt); }
+.meta { font-size: 0.8125rem; color: var(--dim); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+/* Drill */
+.drill { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 24px 40px; align-items: start; }
+@media (max-width: 760px) { .drill { grid-template-columns: minmax(0, 1fr); } }
+.mgrid-wrap { overflow-x: auto; }
+#mgrid { display: block; image-rendering: pixelated; }
+.legend { display: grid; gap: 8px; }
+.legend div { display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: center; }
+.legend canvas { width: 28px; height: 28px; }
+#practise { font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem; color: var(--ice); min-height: 1.6em; }
+
+/* Rules, tables */
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px 32px; }
+.rules div { display: grid; gap: 4px; border-top: 1px solid var(--line); padding-top: 12px; align-content: start; min-width: 0; }
+.rules strong { font-family: var(--font-mono); color: var(--bolt); font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 0.95rem; }
+th, td { text-align: left; padding: 8px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--font-mono); font-size: 0.8125rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
+td:first-child { font-weight: 700; white-space: nowrap; }
+.sound-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.sound-row button { font-family: var(--font-mono); font-weight: 700; font-size: 0.875rem; background: var(--panel); color: var(--ink); border: 1px solid var(--line); padding: 8px 12px; cursor: pointer; }
+.sound-row button:hover { border-color: var(--bolt); }
+.lineage { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr)); gap: 16px; }
+.lineage div { background: var(--panel); border: 1px solid var(--line); padding: 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.lineage ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; }
+footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: var(--step--1); color: var(--dim); display: grid; gap: 6px; }
+footer a { color: var(--ice); }
+@media (prefers-reduced-motion: reduce) { button.primary:active { transform: none; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="label">Concept sheet · v0.1 · inspired by the mechanics of Missile Command (1980)</p>
+      <h1 id="title">Storm Wizard</h1>
+      <p class="pitch">Hail is falling on the sky islands, and every stone carries a sum. Type the answer and your lightning finds it. Answer fast, build your streak, and save it for a Thunderclap that clears the sky.</p>
+    </div>
+    <div class="actions">
+      <button class="primary" id="copy-picks" type="button">Copy my picks</button>
+      <span id="copy-status" role="status"></span>
+      <textarea id="picks-text" hidden readonly aria-label="Your picks as JSON"></textarea>
+    </div>
+  </header>
+
+  <section class="philo" aria-label="How Storm Wizard plays for different players">
+    <div><strong>A beginner</strong><p>Sets Breeze pace and the facts they're learning, then answers one stone at a time. A slow sky, big readable numbers, nothing to aim.</p></div>
+    <div><strong>An expert</strong><p>Lets stones bunch up so one answer's blast takes several, banks a ×8 streak, and plays Tempest with all four operations.</p></div>
+    <div><strong>Risk &amp; reward</strong><p>Spend the streak on a Thunderclap now, or keep it for bigger points and risk losing it to one wrong answer.</p></div>
+    <div><strong>What it forgives</strong><p>A wrong answer only fizzles. Cottages take two hits, towers only get stunned, and a missed fact is shown with its answer, then asked again soon.</p></div>
+  </section>
+
+  <section class="screen-block" aria-labelledby="screen-h">
+    <div class="section-head">
+      <h2 id="screen-h">Wave 1 · The first squall</h2>
+      <p class="muted">The real screen at 416 × 228, scaled up. It plays itself until you take over. Click it, then type the answer on any stone. Nothing to aim: the lightning finds the stone.</p>
+    </div>
+    <div class="stage" id="stage">
+      <div class="bezel" id="bezel"><canvas id="screen" width="1664" height="912" tabindex="0" aria-label="Game screen mockup. Click it, then type the answers to the problems on the falling hailstones. Space spends your streak on a Thunderclap. P pauses, M mutes."></canvas></div>
+      <div class="device phone" id="dev-phone" aria-label="Phone layout preview">
+        <div class="keys-col" data-keys="1 2 3 4 5 back"></div>
+        <div class="slot" id="slot-phone"></div>
+        <div class="keys-col" data-keys="6 7 8 9 0 clap"></div>
+      </div>
+      <div class="device tablet" id="dev-tablet" aria-label="Tablet layout preview">
+        <div></div>
+        <div class="slot" id="slot-tablet"></div>
+        <div class="keys-row" data-keys="1 2 3 4 5 6 7 8 9 0 back clap"></div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="row"><span class="label">Keyboard</span>
+        <span class="key"><kbd>0</kbd>–<kbd>9</kbd> answer</span>
+        <span class="key"><kbd>⌫</kbd> undo a digit</span>
+        <span class="key"><kbd>Space</kbd> Thunderclap</span>
+        <span class="key"><kbd>P</kbd> pause</span>
+        <span class="key"><kbd>M</kbd> sound</span>
+      </div>
+      <div class="row"><span class="label">Controller</span>
+        <span class="key">stick or d-pad picks a digit on the arc, <kbd>A</kbd> enters it, <kbd>B</kbd> undo, <kbd>Y</kbd> Thunderclap, <kbd>Start</kbd> pause</span>
+        <span class="pad-status" id="pad-status" role="status">No controller yet. Press any button on it.</span>
+      </div>
+      <div class="row"><span class="label">Show as</span>
+        <span class="seg" role="group" aria-label="Device layout"><button type="button" data-view="desktop" aria-pressed="true">Desktop</button><button type="button" data-view="phone" aria-pressed="false">Phone</button><button type="button" data-view="tablet" aria-pressed="false">Tablet</button></span>
+        <span class="label">Sound</span>
+        <span class="seg" role="group" aria-label="Sound"><button type="button" data-sound="off" aria-pressed="true">Off</button><button type="button" data-sound="on" aria-pressed="false">On</button></span>
+      </div>
+      <div class="row"><span class="label">Practise</span>
+        <span class="seg" role="group" aria-label="Operations"><button type="button" data-op="+" aria-pressed="true">+</button><button type="button" data-op="-" aria-pressed="true">−</button><button type="button" data-op="x" aria-pressed="true">×</button><button type="button" data-op="/" aria-pressed="false">÷</button></span>
+        <span class="seg" role="group" aria-label="Addition and subtraction range"><button type="button" data-addr="10" aria-pressed="false">to 10</button><button type="button" data-addr="20" aria-pressed="true">to 20</button><button type="button" data-addr="100" aria-pressed="false">to 100</button></span>
+        <span class="seg" role="group" aria-label="Times tables range"><button type="button" data-mulr="5" aria-pressed="false">5×5</button><button type="button" data-mulr="10" aria-pressed="true">10×10</button><button type="button" data-mulr="12" aria-pressed="false">12×12</button></span>
+        <span class="seg" role="group" aria-label="Pace"><button type="button" data-pace="breeze" aria-pressed="true">Breeze</button><button type="button" data-pace="gale" aria-pressed="false">Gale</button><button type="button" data-pace="tempest" aria-pressed="false">Tempest</button></span>
+      </div>
+    </div>
+    <div class="screen-notes">
+      <div><span class="label">No Enter key</span><p>A shot fires the moment your number matches a stone. The game never shows 5 and 56 at once, so a match is never ambiguous.</p></div>
+      <div><span class="label">Same answer, two stones</span><p>3 × 4 and 6 × 2 both falling? Type 12 once and both go. It shows they're the same number.</p></div>
+      <div><span class="label">Misfire</span><p>A digit that can't lead to any answer fizzles at once: the box clears, the streak resets, and digits pause for 0.4 s.</p></div>
+      <div><span class="label">Warning before harm</span><p>A chevron marks where each stone will land, and its plate outline thickens as it gets close. Shape and brightness carry it, never colour.</p></div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="face-h">
+    <div class="section-head">
+      <h2 id="face-h">Pick the title face</h2>
+      <p class="muted">Used for the title screen and on the Arcadia cartridge. Everything a player must read uses Atkinson Hyperlegible, a face designed so similar letters and digits are easy to tell apart. All are SIL OFL.</p>
+    </div>
+    <div class="faces" id="faces"></div>
+  </section>
+
+  <section class="section" aria-labelledby="def-h">
+    <div class="section-head"><h2 id="def-h">The islands</h2><p class="muted">Pick the sprite that reads best at 1×, the size it plays at. Your pick shows in the live screen at once.</p></div>
+    <div class="grid" id="def-grid"></div>
+  </section>
+
+  <section class="section" aria-labelledby="storm-h">
+    <div class="section-head"><h2 id="storm-h">The storm</h2><p class="muted">Every problem sits on a white plate with dark digits. The storm types differ by sprite shape and by the plate's border, never by colour alone.</p></div>
+    <div class="grid" id="storm-grid"></div>
+  </section>
+
+  <section class="section" aria-labelledby="kit-h">
+    <div class="section-head"><h2 id="kit-h">Gifts from the Storm Crow</h2><p class="muted">Answer the crow's starred problem (one step harder than your range) for one of these, picked at random.</p></div>
+    <div class="grid" id="kit-grid"></div>
+  </section>
+
+  <section class="section" aria-labelledby="rules-h">
+    <div class="section-head"><h2 id="rules-h">How a game plays</h2></div>
+    <div class="rules">
+      <div><strong>Answer to strike</strong><p>Type the answer on any stone. Lightning leaps from the nearest working tower and bursts into a blast that also catches stones nearby.</p></div>
+      <div><strong>50 · 100 · 150 · 250</strong><p>Hailstone, split cloud, ball lightning, Storm Crow. A stone caught by someone else's blast is worth 25. All points are multiplied by your streak.</p></div>
+      <div><strong>Streak ×1 to ×8</strong><p>Every three correct answers in a row adds ×1. A misfire or a landing resets it.</p></div>
+      <div><strong>Thunderclap at ×4+</strong><p>Spend the streak to strike every stone in the sky at once. Or keep building and risk it.</p></div>
+      <div><strong>Six cottages</strong><p>Each takes two hits: roof gone, then rubble. A hit tower is stunned for 5 s and the others fire instead. A cottage is rebuilt every 10,000 points.</p></div>
+      <div><strong>Waves</strong><p>Each wave adds stones and a little speed. Split clouds join in wave 2, the crow in wave 2, ball lightning in wave 3. +100 per cottage standing at the end.</p></div>
+      <div><strong>The storm wins</strong><p>When every cottage is rubble. The panel shows your score and three facts to practise, with their answers. One press to try again.</p></div>
+      <div><strong>Arcade essentials</strong><p>Pause, a high score, and an attract mode in which the wizard plays by themselves for Arcadia.</p></div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="drill-h">
+    <div class="section-head">
+      <h2 id="drill-h">The drill underneath</h2>
+      <p class="muted">Every fact sits in one of five boxes, saved in this browser only. New and missed facts come up most; facts you answer quickly move up a box and come up less. A missed fact shows big over the impact with its answer, then returns within a few stones. The title screen shows this grid. Here it fills from the screen above (× facts, this visit only).</p>
+    </div>
+    <div class="drill">
+      <div class="mgrid-wrap"><canvas id="mgrid" width="338" height="338" role="img" aria-label="Times-table mastery grid for this visit"></canvas></div>
+      <div class="legend" id="legend">
+        <div><canvas data-box="-1" width="28" height="28"></canvas><span>Not seen yet</span></div>
+        <div><canvas data-box="0" width="28" height="28"></canvas><span>Missed: a slash, and it comes back soon</span></div>
+        <div><canvas data-box="1" width="28" height="28"></canvas><span>Box 1: answered, but low in the sky</span></div>
+        <div><canvas data-box="2" width="28" height="28"></canvas><span>Box 2</span></div>
+        <div><canvas data-box="3" width="28" height="28"></canvas><span>Box 3</span></div>
+        <div><canvas data-box="4" width="28" height="28"></canvas><span>Box 4: answered quickly, over and over</span></div>
+        <p class="muted">Quick means answered while the stone is in the upper 60% of the sky. A stone caught in someone else's blast teaches nothing, so it isn't counted.</p>
+        <p class="label">Facts to practise</p>
+        <p id="practise">None yet.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="ctl-h">
+    <div class="section-head"><h2 id="ctl-h">Controls on every device</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Action</th><th>Keyboard + mouse</th><th>Controller</th><th>Touch</th></tr></thead>
+        <tbody>
+          <tr><td>Answer</td><td>Digits (top row or numpad)</td><td>Stick or d-pad points at a digit on the arc, A enters it</td><td>Number keys in the bars beside the game (phone) or below it (tablet)</td></tr>
+          <tr><td>Undo a digit</td><td>Backspace</td><td>B</td><td>⌫</td></tr>
+          <tr><td>Thunderclap</td><td>Space</td><td>Y</td><td>⚡</td></tr>
+          <tr><td>Pause</td><td>P</td><td>Start</td><td>II in the top bar</td></tr>
+          <tr><td>Sound</td><td>M, or click the speaker</td><td>Back / Select</td><td>Speaker in the top bar</td></tr>
+          <tr><td>Menus</td><td>Arrows + Enter, or click</td><td>D-pad + A</td><td>Tap</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="snd-h">
+    <div class="section-head">
+      <h2 id="snd-h">Sound &amp; music</h2>
+      <p class="muted">Folk-fantasy chiptune in D Dorian at 110 BPM, composed in code. Plucked harp and a soft pad when the sky is calm. A flute lead joins as the waves go on. When a stone gets low, drums and a thunder rumble come in, so the music tells you the danger. Every sound is in key and plays at once: each digit you type plays a note, and correct answers climb with your streak.</p>
+    </div>
+    <div class="sound-row" id="sound-row">
+      <button type="button" data-sfx="digit">Typing 7 · 2</button>
+      <button type="button" data-sfx="correct">Correct answer</button>
+      <button type="button" data-sfx="streak">Streak climbing</button>
+      <button type="button" data-sfx="misfire">Misfire</button>
+      <button type="button" data-sfx="land">Hail lands</button>
+      <button type="button" data-sfx="clap">Thunderclap</button>
+      <button type="button" data-sfx="gift">Crow's gift</button>
+      <button type="button" data-sfx="clear">Wave clear</button>
+    </div>
+    <p class="muted">Turn Sound on above to hear the music react to the screen. One mute key everywhere; the attract mode is silent.</p>
+  </section>
+
+  <section class="section" aria-labelledby="lineage-h">
+    <div class="section-head"><h2 id="lineage-h">From the 1980 original</h2></div>
+    <div class="lineage">
+      <div><h3>Kept</h3><ul>
+        <li>Threats falling on things you defend, from a fixed screen</li>
+        <li>Three firing points and six homes along the ground</li>
+        <li>Blasts that catch whatever drifts into them</li>
+        <li>Splitting threats, a crossing flyer, a dodger in later waves</li>
+        <li>End-of-wave bonus and a home rebuilt at a score</li>
+      </ul></div>
+      <div><h3>Changed</h3><ul>
+        <li>Aim and fire becomes type the answer</li>
+        <li>Wars and missiles become a storm and a wizard</li>
+        <li>Towers are stunned, never destroyed; homes take two hits</li>
+        <li>No ammo to run out of; a misfire is the cost</li>
+      </ul></div>
+      <div><h3>Added</h3><ul>
+        <li>Adaptive drilling of real math facts</li>
+        <li>Streak multiplier and the Thunderclap gamble</li>
+        <li>Landing markers, and the missed fact shown with its answer</li>
+        <li>Operation, range and pace settings for every age</li>
+        <li>Music that rises with the danger</li>
+      </ul></div>
+      <div><h3>Left behind</h3><ul>
+        <li>Every name, image and sound of the original</li>
+        <li>Nuclear and cold-war imagery</li>
+        <li>The trackball and three fire buttons</li>
+        <li>"The End" when all is lost; here the storm simply passes</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Sprites: <a href="https://huggingface.co/spaces/cfahlgren1/pixel-search" target="_blank" rel="noopener">Pixel Search</a> catalog of <a href="https://huggingface.co/datasets/Angais/pixel-art-atlas-1.4m" target="_blank" rel="noopener">Angais/pixel-art-atlas-1.4m</a>, CC0, AI-generated. Numbers under each sprite are its catalog id.</span>
+    <span>Fonts: Grenze Gotisch, Pirata One, Uncial Antiqua, Atkinson Hyperlegible Next and Mono (SIL OFL). Inspired by the mechanics of Missile Command (Atari, 1980); not affiliated with or endorsed by its rights holders.</span>
+  </footer>
+</div>
+
+<script>
+const SPRITES = /*SPRITES*/{};
+
+const DEFENDERS = [
+  { slot: "wizard", name: "The Storm Wizard", text: "You. Stands on the centre tower and raises the staff with every strike. Never hit; the islands are what you protect." },
+  { slot: "tower", name: "Tower", pts: "stunned, never lost", ghost: true, text: "Three towers channel the lightning; the nearest working one strikes. Hail on a tower stuns it for 5 s." },
+  { slot: "cottage", name: "Cottage", pts: "100 at wave end", ghost: true, text: "Six to defend. The first hit takes the roof off (drawn without it, smoking); the second leaves rubble." },
+  { slot: "rubble", name: "Rubble", text: "A cottage after two hits. Mend rebuilds one; so does every 10,000 points." },
+];
+const STORM = [
+  { slot: "hailstone", name: "Hailstone", pts: "50", text: "Falls in a straight line at a cottage or tower. Plain plate. Its landing spot shows a chevron." },
+  { slot: "splitcloud", name: "Split cloud", pts: "100", text: "From wave 2. Drifts down slowly; answer it before mid-sky or it bursts into three hailstones with new problems." },
+  { slot: "crow", name: "Storm Crow", pts: "250 + gift", text: "From wave 2, once a wave. Crosses high and never attacks. Its plate has a star and a double border, and its problem is one step harder." },
+  { slot: "balllightning", name: "Ball lightning", pts: "150", text: "From wave 3. Zigzags as it falls and slips through blasts, so only its own answer stops it. Its plate has a zigzag edge." },
+];
+const KIT = [
+  { slot: "gust", name: "Gust", text: "A wind that slows everything in the sky to 40% for 6 s." },
+  { slot: "mend", name: "Mend", text: "Rebuilds the most damaged cottage one step." },
+  { slot: "ward", name: "Ward", text: "A dome over the next cottage in danger. It takes one hit for it." },
+];
+const FACES = [
+  { id: "grenze", family: '"Grenze Gotisch", Georgia, serif', name: "Grenze Gotisch", note: "Blackletter with an edge, like a spellbook." },
+  { id: "pirata", family: '"Pirata One", Georgia, serif', name: "Pirata One", note: "Rougher, storybook-adventure." },
+  { id: "uncial", family: '"Uncial Antiqua", Georgia, serif', name: "Uncial Antiqua", note: "Round and friendly, a fairy-tale almanac." },
+];
+
+// Picks: first candidate by default (the build puts the chosen sprite first). Remembered per viewer when storage allows.
+const picks = {};
+for (const slot in SPRITES) picks[slot] = SPRITES[slot][0]?.id;
+let titleFace = "pirata";
+try {
+  const saved = JSON.parse(localStorage.getItem("storm-wizard-picks") || "{}");
+  for (const slot in saved) if (SPRITES[slot]?.some((s) => s.id === saved[slot])) picks[slot] = saved[slot];
+  if (FACES.some((f) => f.id === saved.titleFont)) titleFace = saved.titleFont;
+} catch (e) {}
+function save() { try { localStorage.setItem("storm-wizard-picks", JSON.stringify({ ...picks, titleFont: titleFace })); } catch (e) {} }
+
+const images = {}, halos = {};
+for (const slot in SPRITES) for (const s of SPRITES[slot]) {
+  const img = new Image();
+  img.onload = () => { // a pale silhouette, drawn round dark sprites so they read against the night sky
+    const c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+    const g = c.getContext("2d"); g.drawImage(img, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = "#c9d4ff"; g.fillRect(0, 0, c.width, c.height);
+    halos[s.id] = c;
+  };
+  img.src = s.src; images[s.id] = img;
+}
+const entry = (slot) => SPRITES[slot]?.find((s) => s.id === picks[slot]);
+
+function candidates(slot) {
+  const box = document.createElement("div");
+  box.className = "cands";
+  for (const s of SPRITES[slot] || []) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "cand"; b.dataset.slot = slot; b.dataset.id = s.id;
+    b.title = `${s.subject} · #${s.id}`;
+    b.setAttribute("aria-label", `${s.subject}, catalog ${s.id}`);
+    const img = document.createElement("img"); img.src = s.src; img.alt = "";
+    b.append(img); box.append(b);
+  }
+  return box;
+}
+function card({ slot, name, pts, ghost, text }) {
+  const c = document.createElement("article");
+  c.className = "card"; c.dataset.slot = slot;
+  const head = document.createElement("div"); head.className = "card-head";
+  const hero = document.createElement("img"); hero.className = "hero-sprite"; hero.alt = name; hero.dataset.hero = slot;
+  const title = document.createElement("div"); title.className = "card-title";
+  const h = document.createElement("h3"); h.textContent = name; title.append(h);
+  if (pts) { const chip = document.createElement("span"); chip.className = ghost ? "chip ghost" : "chip"; chip.textContent = ghost ? pts : `${pts} pts`; title.append(chip); }
+  const meta = document.createElement("span"); meta.className = "meta"; meta.dataset.meta = slot; title.append(meta);
+  head.append(hero, title); c.append(head);
+  if (text) { const p = document.createElement("p"); p.textContent = text; c.append(p); }
+  c.append(candidates(slot));
+  return c;
+}
+for (const s of DEFENDERS) document.getElementById("def-grid").append(card(s));
+for (const e of STORM) document.getElementById("storm-grid").append(card(e));
+for (const k of KIT) document.getElementById("kit-grid").append(card(k));
+
+function refreshCards() {
+  document.querySelectorAll("[data-hero]").forEach((img) => { const e = entry(img.dataset.hero); if (e) img.src = e.src; });
+  document.querySelectorAll("[data-meta]").forEach((m) => { const s = entry(m.dataset.meta); if (s) m.textContent = `${s.subject} · #${s.id}`; });
+  document.querySelectorAll(".cand").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.id) === picks[b.dataset.slot])));
+}
+refreshCards();
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest(".cand");
+  if (!b) return;
+  picks[b.dataset.slot] = Number(b.dataset.id);
+  save(); refreshCards();
+});
+
+for (const f of FACES) {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "face"; b.dataset.face = f.id;
+  const s = document.createElement("span"); s.className = "sample"; s.style.fontFamily = f.family; s.textContent = "Storm Wizard";
+  const n = document.createElement("span"); n.className = "name"; n.textContent = f.name;
+  const p = document.createElement("span"); p.className = "muted"; p.textContent = f.note;
+  b.append(s, n, p); document.getElementById("faces").append(b);
+}
+function syncFace() {
+  const f = FACES.find((x) => x.id === titleFace);
+  document.getElementById("title").style.fontFamily = f.family;
+  document.querySelectorAll(".face").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.face === titleFace)));
+}
+syncFace();
+document.getElementById("faces").addEventListener("click", (ev) => { const b = ev.target.closest(".face"); if (!b) return; titleFace = b.dataset.face; save(); syncFace(); });
+
+document.getElementById("copy-picks").addEventListener("click", () => {
+  const json = JSON.stringify({ ...picks, titleFont: titleFace }, null, 2);
+  const status = document.getElementById("copy-status");
+  const area = document.getElementById("picks-text");
+  const fallback = () => { area.value = json; area.hidden = false; area.focus(); area.select(); status.textContent = "Copy the selected text below."; };
+  try {
+    navigator.clipboard.writeText(json).then(() => { area.hidden = true; status.textContent = "Copied. Paste it back to Claude."; }, fallback);
+  } catch (e) { fallback(); }
+});
+
+// ================= Screen mockup =================
+const cv = document.getElementById("screen");
+const ctx = cv.getContext("2d");
+const S = 4, W = 416, H = 228, TOP = 14, GROUND = 196;
+const C = { night: "#0a0f22", ink: "#edf1ff", dim: "#9ba7d2", bolt: "#ffe36e", ice: "#bfe9ff", line: "#283361", panel: "#131a35", plate: "#f4f7ff", plateInk: "#0d1330" };
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const TAU = Math.PI * 2;
+const rand = Math.random;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const MONO = '"Atkinson Hyperlegible Mono", ui-monospace, monospace';
+const TITLE_FONT = () => FACES.find((f) => f.id === titleFace).family;
+function mulberry32(a) { return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+// ---- Settings ----
+const settings = { ops: new Set(["+", "-", "x"]), addR: 20, mulR: 10, pace: "breeze" };
+const PACE = {
+  breeze: { fall: 18, gap: 1.4, cap: 3 },
+  gale: { fall: 12, gap: 1.0, cap: 5 },
+  tempest: { fall: 8, gap: 0.75, cap: 7 },
+};
+const SIGN = { "+": "+", "-": "−", x: "×", "/": "÷" };
+
+// ---- Facts ----
+function factsFor(op, addR, mulR) {
+  const out = [];
+  if (op === "+" || op === "-") {
+    if (addR <= 20) {
+      for (let a = 0; a <= addR; a++) for (let b = 0; b <= addR; b++) {
+        if (op === "+" && a + b <= addR) out.push({ op, a, b, ans: a + b });
+        if (op === "-" && b <= a) out.push({ op, a, b, ans: a - b });
+      }
+    } else {
+      for (let i = 0; i < 400; i++) {
+        const a = 10 + Math.floor(rand() * 80), b = 2 + Math.floor(rand() * Math.min(60, op === "+" ? 100 - a : a - 1));
+        out.push(op === "+" ? { op, a, b, ans: a + b } : { op, a, b, ans: a - b });
+      }
+    }
+  } else {
+    for (let a = 1; a <= mulR; a++) for (let b = 1; b <= mulR; b++) {
+      if (op === "x") out.push({ op, a, b, ans: a * b });
+      else out.push({ op, a: a * b, b: a, ans: b });
+    }
+  }
+  for (const f of out) { f.key = `${f.a}${f.op}${f.b}`; f.str = String(f.ans); f.label = `${f.a} ${SIGN[f.op]} ${f.b}`; }
+  return out;
+}
+function poolNow(stretch = false) {
+  const addR = stretch ? (settings.addR === 10 ? 20 : 100) : settings.addR;
+  const mulR = stretch ? (settings.mulR === 5 ? 10 : 12) : settings.mulR;
+  return [...settings.ops].flatMap((op) => factsFor(op, addR, mulR));
+}
+let pool = poolNow(), stretchPool = poolNow(true);
+
+// Memory: a Leitner box per fact (this visit only; the game saves it in storm-wizard-facts).
+const memory = new Map();
+let spawnCount = 0;
+const requeue = [];
+const missedRecent = [];
+const WEIGHT = { new: 3, 0: 6, 1: 4, 2: 2, 3: 1, 4: 0.4 };
+function liveAnswers() { return foes.filter((f) => !f.dead && f.fact).map((f) => f.fact.str); }
+function prefixSafe(str, lives) { return lives.every((a) => a === str || (!a.startsWith(str) && !str.startsWith(a))); }
+function pickFact(stretch = false) {
+  const lives = liveAnswers();
+  const due = requeue.findIndex((r) => r.at <= spawnCount && prefixSafe(r.fact.str, lives) && !foes.some((f) => !f.dead && f.fact?.key === r.fact.key));
+  if (!stretch && due >= 0) return requeue.splice(due, 1)[0].fact;
+  const src = stretch ? stretchPool : pool;
+  for (let tries = 0; tries < 40; tries++) {
+    // Weighted pick: sample a few, keep the heaviest-weighted (cheap and good enough).
+    let best = null, bestW = -1;
+    for (let k = 0; k < 4; k++) {
+      const f = src[Math.floor(rand() * src.length)];
+      const m = memory.get(f.key);
+      const w = (m ? WEIGHT[m.box] : WEIGHT.new) * (0.5 + rand());
+      if (w > bestW) { best = f; bestW = w; }
+    }
+    if (prefixSafe(best.str, lives) && !foes.some((f) => !f.dead && f.fact?.key === best.key)) return best;
+  }
+  return null;
+}
+function credit(fact, quick) {
+  const m = memory.get(fact.key) || { box: 0, missed: false };
+  if (quick) m.box = Math.min(4, m.box + 1); else m.box = Math.max(1, m.box);
+  m.missed = false; memory.set(fact.key, m); drawGrid();
+}
+function missFact(fact) {
+  memory.set(fact.key, { box: 0, missed: true });
+  requeue.push({ fact, at: spawnCount + 2 + Math.floor(rand() * 3) });
+  const i = missedRecent.findIndex((f) => f.key === fact.key); if (i >= 0) missedRecent.splice(i, 1);
+  missedRecent.unshift(fact); missedRecent.length = Math.min(missedRecent.length, 3);
+  document.getElementById("practise").textContent = missedRecent.map((f) => `${f.label} = ${f.ans}`).join("   ·   ");
+  drawGrid();
+}
+
+// ---- World ----
+const TOWERS = [24, 208, 392].map((x) => ({ x, stun: 0 }));
+const COTTAGES = [70, 116, 162, 254, 300, 346].map((x) => ({ x, dmg: 0, ward: false }));
+let foes = [], bolts = [], blasts = [], sparks = [], popups = [], rings = [];
+let score = 0, hi = 12500, streak = 0, wave = 1, waveState, state = "play", stateT = 0, gustT = 0, flash = 0, shake = 0;
+let buffer = "", lockout = 0, misfireT = 0, misfireText = "", paused = false;
+let lastInput = -1e9, lastDevice = "kbm", demo = true, padSel = 4;
+const mult = () => Math.min(8, 1 + Math.floor(streak / 3));
+
+function waveDef(w) {
+  const p = PACE[settings.pace];
+  return { count: 6 + 2 * w, cap: Math.min(p.cap + (w >= 4 ? 1 : 0), 2 + Math.floor(w / 2)), fall: p.fall / (1 + 0.06 * (w - 1)), gap: Math.max(1.2, 3.2 - 0.2 * w) * p.gap };
+}
+function startWave(w) {
+  wave = w; const d = waveDef(w);
+  waveState = { ...d, spawned: 0, next: 1.2, crowAt: w >= 2 ? Math.floor(d.count / 2) : -1, crowDone: false };
+  popups.push({ x: W / 2, y: 92, text: `WAVE ${w}`, life: 1.8, max: 1.8, big: true });
+}
+function newGame() {
+  foes = []; bolts = []; blasts = []; sparks = []; popups = []; rings = [];
+  for (const t of TOWERS) t.stun = 0;
+  for (const c of COTTAGES) { c.dmg = 0; c.ward = false; }
+  score = 0; streak = 0; buffer = ""; state = "play"; gustT = 0; spawnCount = 0; requeue.length = 0;
+  startWave(1);
+}
+function standingTargets() {
+  const list = [];
+  for (const c of COTTAGES) if (c.dmg < 2) list.push({ x: c.x, kind: "cottage", ref: c }, { x: c.x, kind: "cottage", ref: c });
+  for (const t of TOWERS) list.push({ x: t.x, kind: "tower", ref: t });
+  return list;
+}
+function spawn(kind, opts = {}) {
+  const stretch = kind === "crow";
+  const fact = pickFact(stretch);
+  if (!fact) return false;
+  spawnCount++;
+  if (kind === "crow") {
+    const dir = rand() < 0.5 ? 1 : -1;
+    foes.push({ kind, fact, x: dir > 0 ? -12 : W + 12, y: 34 + rand() * 10, vx: dir * 42, t: 0, born: performance.now() });
+    sfx("crow"); return true;
+  }
+  const targets = standingTargets();
+  const tgt = opts.target || targets[Math.floor(rand() * targets.length)];
+  const sx = opts.x ?? clamp(tgt.x + (rand() - 0.5) * 260, 12, W - 12);
+  const sy = opts.y ?? TOP + 2;
+  const ty = kind === "cloud" ? 104 : GROUND - 4;
+  const tx = kind === "cloud" ? lerp(sx, tgt.x, 0.45) : tgt.x;
+  const fall = waveState.fall * (kind === "cloud" ? 0.55 : kind === "ball" ? 0.9 : 1) * (opts.fallMul || 1);
+  foes.push({ kind, fact, sx, sy, tx, ty, x: sx, y: sy, p: opts.p || 0, dur: fall * ((ty - sy) / (GROUND - TOP)), target: tgt, wob: rand() * TAU });
+  if (kind === "ball") sfx("crackle");
+  return true;
+}
+
+// ---- Input: typing ----
+function typeDigit(d) {
+  if (paused || state !== "play" || lockout > 0) return;
+  audioOn();
+  buffer += d;
+  sfx("digit", Number(d));
+  const live = foes.filter((f) => !f.dead && f.fact);
+  const exact = live.filter((f) => f.fact.str === buffer);
+  if (exact.length) { strike(exact); buffer = ""; return; }
+  if (live.some((f) => f.fact.str.startsWith(buffer))) return;
+  misfire();
+}
+function undoDigit() { if (buffer) { buffer = buffer.slice(0, -1); sfx("undo"); } }
+function misfire() {
+  misfireText = buffer; misfireT = 0.5; buffer = ""; lockout = 0.4; streak = 0;
+  sfx("misfire");
+  for (let i = 0; i < 6; i++) sparks.push({ x: 208, y: 166, vx: (rand() - 0.5) * 50, vy: -rand() * 40, life: 0.4, col: C.dim });
+}
+function nearestTower(x) {
+  let best = null;
+  for (const t of TOWERS) if (t.stun <= 0 && (!best || Math.abs(t.x - x) < Math.abs(best.x - x))) best = t;
+  return best || TOWERS[1];
+}
+function strike(list, clap = false) {
+  for (const f of list) {
+    const t = nearestTower(f.x);
+    bolts.push({ x0: t.x, y0: 170, x1: f.x, y1: f.y, life: 0.2, seed: rand() * 1e9 });
+    const base = { hail: 50, cloud: 100, ball: 150, crow: 250 }[f.kind];
+    if (!clap) { streak++; credit(f.fact, f.kind === "crow" || (f.y - TOP) / (GROUND - TOP) < 0.6); }
+    addScore(base * mult());
+    popups.push({ x: f.x, y: f.y - 10, text: String(base * mult()), life: 0.8, max: 0.8 });
+    kill(f);
+    if (f.kind === "crow") gift(f);
+  }
+  if (!clap) { wizardCast = 0.3; sfx(list.length > 1 ? "double" : "correct", streak); }
+}
+function kill(f) {
+  f.dead = true;
+  blasts.push({ x: f.x, y: f.y, r: 2, max: f.kind === "cloud" ? 20 : 15, life: 0.75, from: f });
+  burst(f.x, f.y, f.kind === "ball" ? C.bolt : C.ice, 14);
+  rings.push({ x: f.x, y: f.y, r: 3, dr: 70, life: 0.35 });
+  shakeIt(1);
+  sfx("blast");
+  if (buffer && !foes.some((g) => !g.dead && g.fact && g.fact.str.startsWith(buffer))) buffer = "";
+}
+function thunderclap() {
+  if (paused || state !== "play" || mult() < 4) return;
+  const live = foes.filter((f) => !f.dead && f.kind !== "crow");
+  if (!live.length) return;
+  audioOn();
+  strike(live, true);
+  streak = 0; flash = reduceMotion ? 0 : 0.35; shakeIt(3);
+  wizardCast = 0.6; sfx("clap");
+  popups.push({ x: W / 2, y: 70, text: "THUNDERCLAP!", life: 1.2, max: 1.2, big: true });
+}
+function gift(f) {
+  const kinds = ["gust", "mend", "ward"];
+  const g = kinds[Math.floor(rand() * 3)];
+  if (g === "gust") gustT = 6;
+  if (g === "mend") { const c = [...COTTAGES].sort((a, b) => b.dmg - a.dmg)[0]; if (c.dmg > 0) c.dmg--; else addScore(500); }
+  if (g === "ward") { const c = COTTAGES.filter((c) => c.dmg < 2 && !c.ward).sort((a, b) => threatOn(b) - threatOn(a))[0]; if (c) c.ward = true; }
+  popups.push({ x: f.x, y: f.y + 12, text: g.toUpperCase(), life: 1.4, max: 1.4, icon: g });
+  sfx("gift");
+}
+function threatOn(c) { return foes.filter((f) => !f.dead && f.target?.ref === c).reduce((m, f) => Math.max(m, f.p), 0); }
+function addScore(n) {
+  const before = Math.floor(score / 10000); score += n;
+  if (Math.floor(score / 10000) > before) { const c = COTTAGES.find((c) => c.dmg === 2) || COTTAGES.find((c) => c.dmg === 1); if (c) { c.dmg = 0; popups.push({ x: c.x, y: GROUND - 24, text: "REBUILT", life: 1.4, max: 1.4 }); } }
+  hi = Math.max(hi, score);
+}
+function land(f) {
+  f.dead = true;
+  const tgt = f.target;
+  burst(f.x, GROUND - 2, C.ice, 18);
+  shakeIt(2);
+  if (tgt.kind === "cottage") {
+    const c = tgt.ref;
+    if (c.ward) { c.ward = false; rings.push({ x: c.x, y: GROUND - 8, r: 14, dr: 30, life: 0.4 }); sfx("ward"); }
+    else if (c.dmg < 2) { c.dmg++; sfx(c.dmg === 2 ? "lost" : "land"); }
+    else sfx("land");
+  } else { tgt.ref.stun = 5; sfx("land"); }
+  streak = 0;
+  missFact(f.fact);
+  popups.push({ x: clamp(f.x, 50, W - 50), y: GROUND - 40, text: `${f.fact.label} = ${f.fact.ans}`, life: 2.2, max: 2.2, fact: true });
+  if (buffer && !foes.some((g) => !g.dead && g.fact && g.fact.str.startsWith(buffer))) buffer = "";
+  if (COTTAGES.every((c) => c.dmg >= 2)) { state = "over"; stateT = 0; pilot.wait = 4; sfx("over"); }
+}
+function burst(x, y, col, n) {
+  const k = reduceMotion ? Math.ceil(n / 2) : n;
+  for (let i = 0; i < k; i++) { const a = rand() * TAU, s = 20 + rand() * 60; sparks.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 20, life: 0.3 + rand() * 0.4, col }); }
+}
+function shakeIt(m) { if (!reduceMotion) shake = Math.max(shake, m); }
+
+// ---- Keyboard, pointer ----
+cv.addEventListener("keydown", (ev) => {
+  const k = ev.key;
+  if (state === "over" && !demo && k.length === 1) { ev.preventDefault(); takeOver("kbm"); newGame(); return; }
+  let used = true;
+  if (/^[0-9]$/.test(k)) typeDigit(k);
+  else if (k === "Backspace") undoDigit();
+  else if (k === " ") thunderclap();
+  else if (k === "p" || k === "P") togglePause();
+  else if (k === "m" || k === "M") setSound(!soundOn);
+  else used = false;
+  if (used) { ev.preventDefault(); takeOver("kbm"); }
+});
+cv.addEventListener("pointerdown", (ev) => {
+  cv.focus();
+  const r = cv.getBoundingClientRect(), x = ((ev.clientX - r.left) / r.width) * W, y = ((ev.clientY - r.top) / r.height) * H;
+  takeOver(ev.pointerType === "touch" ? "touch" : "kbm");
+  if (y < TOP && x > W - 16) { setSound(!soundOn); return; }
+  if (y < TOP && x > W - 32) { togglePause(); return; }
+  if (paused) togglePause();
+  if (state === "over") newGame();
+});
+function takeOver(device) {
+  lastInput = performance.now(); lastDevice = device;
+  if (demo) { demo = false; pilot.plan = null; buffer = ""; }
+}
+function togglePause() { if (state === "play" || paused) { paused = !paused; sfx(paused ? "pause" : "resume"); } }
+
+// Touch keys (phone and tablet previews)
+document.querySelectorAll("[data-keys]").forEach((box) => {
+  for (const k of box.dataset.keys.split(" ")) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = k === "back" || k === "clap" ? "tkey alt" : "tkey";
+    b.textContent = k === "back" ? "⌫" : k === "clap" ? "⚡" : k;
+    b.setAttribute("aria-label", k === "back" ? "Undo a digit" : k === "clap" ? "Thunderclap" : `Digit ${k}`);
+    b.addEventListener("pointerdown", (ev) => {
+      ev.preventDefault(); takeOver("touch");
+      if (state === "over") { newGame(); return; }
+      if (k === "back") undoDigit(); else if (k === "clap") thunderclap(); else typeDigit(k);
+    });
+    box.append(b);
+  }
+});
+function setView(v) {
+  const bezel = document.getElementById("bezel"), phone = document.getElementById("dev-phone"), tablet = document.getElementById("dev-tablet");
+  bezel.hidden = v !== "desktop"; phone.dataset.on = String(v === "phone"); tablet.dataset.on = String(v === "tablet");
+  (v === "phone" ? document.getElementById("slot-phone") : v === "tablet" ? document.getElementById("slot-tablet") : bezel).append(cv);
+  document.querySelectorAll("[data-view]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
+  if (v !== "desktop") lastDevice = "touch";
+}
+document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
+
+// Settings controls
+function syncSettings() {
+  document.querySelectorAll("[data-op]").forEach((b) => b.setAttribute("aria-pressed", String(settings.ops.has(b.dataset.op))));
+  document.querySelectorAll("[data-addr]").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.addr) === settings.addR)));
+  document.querySelectorAll("[data-mulr]").forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.mulr) === settings.mulR)));
+  document.querySelectorAll("[data-pace]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.pace === settings.pace)));
+  pool = poolNow(); stretchPool = poolNow(true); requeue.length = 0;
+}
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-op],[data-addr],[data-mulr],[data-pace]");
+  if (!b) return;
+  if (b.dataset.op) { const o = b.dataset.op; if (settings.ops.has(o)) { if (settings.ops.size > 1) settings.ops.delete(o); } else settings.ops.add(o); }
+  if (b.dataset.addr) settings.addR = Number(b.dataset.addr);
+  if (b.dataset.mulr) { settings.mulR = Number(b.dataset.mulr); drawGrid(); }
+  if (b.dataset.pace) settings.pace = b.dataset.pace;
+  syncSettings();
+  newGame();
+});
+
+// ---- Controller: digit arc ----
+let padLabel = "", padWas = {}, padRepeat = 0;
+const ARC = { cx: 208, cy: 216, r: 30 };
+const ARC_DIGITS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+function setPadStatus(label, on) {
+  if (label === padLabel) return;
+  padLabel = label;
+  const el = document.getElementById("pad-status"); el.textContent = label; el.dataset.on = String(on);
+}
+function readPad(now, dt) {
+  let pads;
+  try { pads = navigator.getGamepads ? navigator.getGamepads() : []; }
+  catch (e) { setPadStatus("This viewer blocks controller input. Open design/concept-sheet.html in a browser tab to use it.", false); return; }
+  const p = [...pads].find((g) => g && g.connected);
+  if (!p) { setPadStatus("No controller yet. Press any button on it.", false); return; }
+  setPadStatus(`Connected: ${p.id.replace(/\s*\(.*\)\s*/g, " ").trim()}`, true);
+  const b = (i) => Boolean(p.buttons[i] && p.buttons[i].pressed);
+  const ax = p.axes[0] || 0, ay = p.axes[1] || 0;
+  const cur = { a: b(0), b: b(1), y: b(3), start: b(9), back: b(8), l: b(14), r: b(15) };
+  const any = p.buttons.some((x) => x.pressed) || Math.hypot(ax, ay) > 0.5;
+  if (any) { if (lastDevice !== "pad" || demo) takeOver("pad"); lastInput = now; }
+  if (Math.hypot(ax, ay) > 0.55) {
+    const ang = Math.atan2(-Math.min(ay, 0.25), ax); // 0 = right, π = left; the arc opens upward
+    padSel = clamp(Math.round(((Math.PI - clamp(ang, 0, Math.PI)) / Math.PI) * 9), 0, 9);
+  }
+  padRepeat -= dt;
+  if ((cur.l && (!padWas.l || padRepeat <= 0))) { padSel = Math.max(0, padSel - 1); padRepeat = padWas.l ? 0.12 : 0.35; }
+  if ((cur.r && (!padWas.r || padRepeat <= 0))) { padSel = Math.min(9, padSel + 1); padRepeat = padWas.r ? 0.12 : 0.35; }
+  if (cur.a && !padWas.a) { if (state === "over") newGame(); else typeDigit(ARC_DIGITS[padSel]); }
+  if (cur.b && !padWas.b) undoDigit();
+  if (cur.y && !padWas.y) thunderclap();
+  if (cur.start && !padWas.start) togglePause();
+  if (cur.back && !padWas.back) setSound(!soundOn);
+  padWas = cur;
+}
+
+// ---- Autopilot (becomes the attract-mode pilot and a balance probe) ----
+const pilot = { plan: null, wait: 1 };
+function autopilot(dt) {
+  if (paused) return;
+  if (state === "over") { pilot.wait -= dt; if (pilot.wait <= 0) { newGame(); pilot.wait = 1; } return; }
+  if (lockout > 0) return;
+  pilot.wait -= dt;
+  if (pilot.wait > 0) return;
+  const live = foes.filter((f) => !f.dead && f.fact);
+  if (mult() >= 4 && (live.filter((f) => f.kind !== "crow").length >= 4 || live.some((f) => f.kind !== "crow" && f.p > 0.85))) { thunderclap(); pilot.wait = 0.8; return; }
+  if (!pilot.plan || pilot.plan.target.dead) {
+    if (!live.length) { pilot.wait = 0.3; return; }
+    if (buffer) { undoDigit(); pilot.wait = 0.15; return; }
+    const crow = live.find((f) => f.kind === "crow");
+    const tgt = crow && rand() < 0.4 ? crow : live.filter((f) => f.kind !== "crow").sort((a, b) => b.p - a.p)[0] || live[0];
+    let digits = tgt.fact.str;
+    if (rand() < 0.04) { // an occasional slip, to show the misfire
+      for (const d of "0123456789") if (!live.some((f) => f.fact.str.startsWith(d))) { digits = d; break; }
+    }
+    pilot.plan = { target: tgt, digits, i: 0 };
+    pilot.wait = 0.45 + rand() * 0.7;
+    return;
+  }
+  const plan = pilot.plan;
+  if (plan.i < plan.digits.length) { typeDigit(plan.digits[plan.i++]); pilot.wait = 0.13 + rand() * 0.1; }
+  if (plan.i >= plan.digits.length) { pilot.plan = null; pilot.wait = 0.25; }
+}
+
+// ---- Update ----
+let wizardCast = 0, clock = 0;
+function update(dt, now) {
+  readPad(now, dt);
+  if (!demo && now - lastInput > 12000) { demo = true; buffer = ""; }
+  if (demo) autopilot(dt);
+  if (paused) return;
+  clock += dt;
+  lockout = Math.max(0, lockout - dt); misfireT = Math.max(0, misfireT - dt);
+  flash = Math.max(0, flash - dt); shake = Math.max(0, shake - dt * 8); wizardCast = Math.max(0, wizardCast - dt);
+  gustT = Math.max(0, gustT - dt);
+  for (const t of TOWERS) t.stun = Math.max(0, t.stun - dt);
+  const slow = gustT > 0 ? 0.4 : 1;
+
+  if (state === "over") { stateT += dt; }
+  else if (state === "clear") { stateT += dt; if (stateT > 2.6) { state = "play"; startWave(wave + 1); } }
+  else {
+    const ws = waveState;
+    ws.next -= dt;
+    const onScreen = foes.filter((f) => !f.dead && f.kind !== "crow").length;
+    if (ws.spawned < ws.count && ws.next <= 0 && onScreen < ws.cap) {
+      const n = ws.spawned;
+      let kind = "hail";
+      if (wave >= 2 && n % 4 === 3) kind = "cloud";
+      if (wave >= 3 && n % 5 === 4) kind = "ball";
+      if (spawn(kind)) { ws.spawned++; ws.next = ws.gap * (0.7 + rand() * 0.6); }
+      else ws.next = 0.3;
+    }
+    if (!ws.crowDone && ws.crowAt >= 0 && ws.spawned >= ws.crowAt) { if (spawn("crow")) ws.crowDone = true; }
+    if (ws.spawned >= ws.count && !foes.some((f) => !f.dead && f.kind !== "crow")) {
+      const standing = COTTAGES.filter((c) => c.dmg < 2).length;
+      addScore(standing * 100 * mult());
+      popups.push({ x: W / 2, y: 92, text: `WAVE ${wave} CLEAR  +${standing * 100 * mult()}`, life: 2.4, max: 2.4, big: true });
+      state = "clear"; stateT = 0; sfx("clear");
+    }
+  }
+
+  for (const f of foes) {
+    if (f.dead) continue;
+    if (f.kind === "crow") {
+      f.t += dt; f.x += f.vx * dt * slow; f.y += Math.sin(f.t * 3) * 0.15;
+      if (f.x < -20 || f.x > W + 20) { f.dead = true; if (buffer && !foes.some((g) => !g.dead && g.fact && g.fact.str.startsWith(buffer))) buffer = ""; }
+      continue;
+    }
+    f.p += (dt * slow) / f.dur;
+    const p = Math.min(1, f.p);
+    f.x = lerp(f.sx, f.tx, p); f.y = lerp(f.sy, f.ty, p);
+    if (f.kind === "ball") f.x += Math.sin(p * TAU * 2.5 + f.wob) * 22 * (1 - p);
+    if (f.kind === "cloud") f.x += Math.sin(clock * 0.8 + f.wob) * 3;
+    if (f.p >= 1) {
+      if (f.kind === "cloud") { // bursts into three stones
+        f.dead = true; burst(f.x, f.y, C.dim, 10); sfx("split");
+        const targets = standingTargets();
+        for (let i = 0; i < 3; i++) spawn("hail", { x: f.x + (i - 1) * 8, y: f.y + 4, target: targets[Math.floor(rand() * targets.length)], fallMul: 0.55 });
+        missFact(f.fact);
+        popups.push({ x: clamp(f.x, 50, W - 50), y: f.y - 18, text: `${f.fact.label} = ${f.fact.ans}`, life: 2.2, max: 2.2, fact: true });
+        if (buffer && !foes.some((g) => !g.dead && g.fact && g.fact.str.startsWith(buffer))) buffer = "";
+      } else land(f);
+    }
+  }
+  // Blasts catch stones that drift in (not ball lightning, not the crow).
+  for (const b of blasts) {
+    b.life -= dt; b.r = Math.min(b.max, b.r + dt * 60);
+    if (b.life <= 0) continue;
+    for (const f of foes) {
+      if (f.dead || f.kind === "ball" || f.kind === "crow") continue;
+      if (Math.hypot(f.x - b.x, f.y - b.y) < b.r + 3) {
+        addScore(25 * mult());
+        popups.push({ x: f.x, y: f.y - 10, text: `CHAIN ${25 * mult()}`, life: 0.8, max: 0.8 });
+        kill(f);
+      }
+    }
+  }
+  blasts = blasts.filter((b) => b.life > 0);
+  bolts = bolts.filter((b) => (b.life -= dt) > 0);
+  for (const s of sparks) { s.life -= dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 90 * dt; }
+  sparks = sparks.filter((s) => s.life > 0);
+  rings = rings.filter((r) => { r.life -= dt; r.r += r.dr * dt; return r.life > 0; });
+  popups = popups.filter((p) => { p.life -= dt; return p.life > 0; });
+  foes = foes.filter((f) => !f.dead);
+  updateMusicState();
+}
+
+// ---- Drawing ----
+function bake(w, h, paint) { const c = document.createElement("canvas"); c.width = w; c.height = h; paint(c.getContext("2d"), w, h); return c; }
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+const SKY = bake(W, H, (g) => {
+  const bands = ["#070b1c", "#0a1026", "#0e1630", "#121c3b", "#172347", "#1c2a52", "#22325d", "#283a66"];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const t = (y / H) * (bands.length - 1), i = Math.floor(t), f = t - i;
+    g.fillStyle = bands[Math.min(bands.length - 1, i + (f * 16 > BAYER[(y % 4) * 4 + (x % 4)] ? 1 : 0))];
+    g.fillRect(x, y, 1, 1);
+  }
+  const r = mulberry32(7);
+  for (let i = 0; i < 50; i++) { g.fillStyle = r() < 0.2 ? "#cfd8ff" : "#6a77a8"; g.fillRect(Math.floor(r() * W), 30 + Math.floor(r() * 120), 1, 1); }
+});
+function cloudStrip(seed, col, base, amp) {
+  return bake(W, 40, (g) => {
+    const r = mulberry32(seed);
+    g.fillStyle = col;
+    let x = 0;
+    while (x < W + 30) { const rad = 6 + r() * amp; const cy = base + r() * 4; disc(g, x, cy, rad); disc(g, x - W, cy, rad); x += rad * 1.1; }
+    g.fillRect(0, 0, W, base);
+  });
+}
+function disc(g, cx, cy, r) { for (let dy = -r; dy <= r; dy++) { const half = Math.round(Math.sqrt(r * r - dy * dy)); g.fillRect(Math.round(cx - half), Math.round(cy + dy), half * 2 + 1, 1); } }
+const CLOUD_BACK = cloudStrip(3, "#1a2448", 6, 7);
+const CLOUD_FRONT = cloudStrip(11, "#232f5a", 2, 5);
+const ISLANDS = bake(W, H, (g) => {
+  const spans = [[2, 186], [190, 226], [230, 414]];
+  const r = mulberry32(21);
+  for (const [a, b] of spans) {
+    const mid = (a + b) / 2, half = (b - a) / 2;
+    for (let x = a; x <= b; x++) {
+      const t = Math.abs(x - mid) / half;
+      const depth = Math.round((1 - t * t) * (b - a > 60 ? 26 : 20) + r() * 3);
+      for (let y = GROUND; y < GROUND + depth; y++) {
+        const k = (y - GROUND) / Math.max(1, depth);
+        g.fillStyle = y < GROUND + 2 ? "#5aa264" : y < GROUND + 3 ? "#3d7a4c" : k > 0.85 ? "#2a2a44" : (x + y) % 7 === 0 ? "#4a4567" : "#3b3856";
+        g.fillRect(x, y, 1, 1);
+      }
+      if (r() < 0.25) { g.fillStyle = "#79c27c"; g.fillRect(x, GROUND - 1, 1, 1); }
+    }
+  }
+});
+const rain = Array.from({ length: 70 }, () => ({ x: rand() * W, y: rand() * H, s: 140 + rand() * 80 }));
+
+function sprite(slot, x, y, { alpha = 1, flipX = false, crop = 0, scale = 1, halo = false } = {}) {
+  const e = entry(slot); const img = e && images[e.id];
+  if (!img || !img.complete) return;
+  ctx.save(); ctx.globalAlpha = alpha; ctx.translate(Math.round(x), Math.round(y)); if (flipX) ctx.scale(-1, 1);
+  const s = 16 * scale;
+  if (halo && halos[e.id]) for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) ctx.drawImage(halos[e.id], -s / 2 + dx, -s / 2 + dy, s, s);
+  ctx.drawImage(img, 0, crop, 16, 16 - crop, -s / 2, -s / 2 + crop * scale, s, s - crop * scale);
+  ctx.restore();
+}
+function text(str, x, y, { size = 7, color = C.ink, align = "left", font = MONO, weight = 700, outline = null } = {}) {
+  ctx.font = `${weight} ${size}px ${font}`; ctx.textAlign = align; ctx.textBaseline = "middle";
+  if (outline) { ctx.lineWidth = 2; ctx.strokeStyle = outline; ctx.lineJoin = "round"; ctx.strokeText(str, x, y); }
+  ctx.fillStyle = color; ctx.fillText(str, x, y);
+}
+function plate(f) {
+  ctx.font = `800 7px ${MONO}`;
+  const label = f.fact.label;
+  const w = Math.ceil(ctx.measureText(label).width) + (f.kind === "crow" ? 14 : 7), h = 10;
+  const x = Math.round(clamp(f.x - w / 2, 2, W - w - 2)), y = Math.round(Math.max(TOP + 3, f.y - 20));
+  const urgent = f.kind !== "crow" && f.p > 0.6;
+  ctx.fillStyle = C.plateInk; ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
+  if (urgent) ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
+  ctx.fillStyle = C.plate; ctx.fillRect(x, y, w, h);
+  if (f.kind === "crow") { ctx.strokeStyle = C.plateInk; ctx.lineWidth = 1; ctx.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3); star(x + 5, y + 5); }
+  if (f.kind === "ball") { ctx.fillStyle = C.plateInk; for (let i = 0; i < w; i += 4) { ctx.fillRect(x + i, y - 2, 2, 1); ctx.fillRect(x + i + 2, y + h + 1, 2, 1); } }
+  if (f.kind === "cloud") { ctx.fillStyle = C.plateInk; ctx.fillRect(x + 2, y + h, w - 4, 1); }
+  const typedMatch = buffer && f.fact.str.startsWith(buffer);
+  text(label, x + w / 2 + (f.kind === "crow" ? 3 : 0), y + h / 2 + 0.5, { size: 7, color: C.plateInk, align: "center", weight: 800 });
+  if (typedMatch) { ctx.fillStyle = C.plateInk; ctx.fillRect(x + 2, y + h - 1, w - 4, 1); }
+}
+function star(cx, cy) { ctx.fillStyle = C.plateInk; ctx.fillRect(cx - 1, cy - 3, 2, 6); ctx.fillRect(cx - 3, cy - 1, 6, 2); ctx.fillRect(cx - 2, cy - 2, 4, 4); }
+function lightning(b) {
+  const r = mulberry32(b.seed | 0);
+  const pts = [[b.x0, b.y0]];
+  const n = 9;
+  for (let i = 1; i < n; i++) { const t = i / n; pts.push([lerp(b.x0, b.x1, t) + (r() - 0.5) * 14, lerp(b.y0, b.y1, t) + (r() - 0.5) * 6]); }
+  pts.push([b.x1, b.y1]);
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  for (const [w, col] of [[4, "rgba(255,227,110,0.35)"], [1.6, C.bolt], [0.7, "#ffffff"]]) {
+    ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(...pts[0]); for (const p of pts.slice(1)) ctx.lineTo(...p); ctx.stroke();
+  }
+}
+function icon(kind, x, y) { if (kind === "gust" || kind === "mend" || kind === "ward") sprite(kind, x, y); }
+
+function draw() {
+  ctx.setTransform(S, 0, 0, S, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  const sx = shake > 0 ? Math.round((rand() - 0.5) * shake * 2) : 0, sy = shake > 0 ? Math.round((rand() - 0.5) * shake * 2) : 0;
+  ctx.translate(sx, sy);
+  ctx.drawImage(SKY, 0, 0);
+  const cx = (clock * 4) % W;
+  ctx.drawImage(CLOUD_BACK, -cx, TOP - 2); ctx.drawImage(CLOUD_BACK, W - cx, TOP - 2);
+  const cx2 = (clock * 9) % W;
+  ctx.drawImage(CLOUD_FRONT, -cx2, TOP - 6); ctx.drawImage(CLOUD_FRONT, W - cx2, TOP - 6);
+  // rain
+  ctx.fillStyle = "rgba(150,175,230,0.28)";
+  for (const d of rain) { d.y += d.s / 60 * (paused ? 0 : 1); d.x -= d.s / 240 * (paused ? 0 : 1); if (d.y > H) { d.y = TOP; d.x = rand() * (W + 40); } ctx.fillRect(Math.round(d.x), Math.round(d.y), 1, 3); }
+  if (gustT > 0) { ctx.fillStyle = "rgba(220,235,255,0.35)"; for (let i = 0; i < 8; i++) { const y = 30 + i * 18, x = ((clock * 120 + i * 97) % (W + 60)) - 30; ctx.fillRect(Math.round(x), y, 24, 1); } }
+
+  ctx.drawImage(ISLANDS, 0, 0);
+  // landing markers: a chevron that blinks as the stone nears
+  for (const f of foes) {
+    if (f.dead || f.kind === "crow" || f.kind === "cloud") continue;
+    if (f.p > 0.5 && (reduceMotion || f.p < 0.8 || Math.floor(clock * 8) % 2 === 0)) {
+      const x = Math.round(f.target.x); ctx.fillStyle = C.ink;
+      ctx.fillRect(x - 3, GROUND + 4, 1, 1); ctx.fillRect(x - 2, GROUND + 5, 1, 1); ctx.fillRect(x - 1, GROUND + 6, 3, 1); ctx.fillRect(x + 2, GROUND + 5, 1, 1); ctx.fillRect(x + 3, GROUND + 4, 1, 1);
+    }
+  }
+  // buildings
+  for (const c of COTTAGES) {
+    if (c.dmg === 0) sprite("cottage", c.x, GROUND - 8);
+    else if (c.dmg === 1) { sprite("cottage", c.x, GROUND - 8, { crop: 6 }); ctx.fillStyle = "rgba(160,170,200,0.5)"; for (let i = 0; i < 3; i++) ctx.fillRect(c.x - 2 + Math.round(Math.sin(clock * 2 + i) * 2), GROUND - 18 - i * 4 - Math.round((clock * 6) % 4), 3, 2); }
+    else sprite("rubble", c.x, GROUND - 6);
+    if (c.ward) { ctx.strokeStyle = C.ice; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(c.x, GROUND, 13, Math.PI, 0); ctx.stroke(); ctx.setLineDash([2, 2]); ctx.beginPath(); ctx.arc(c.x, GROUND, 11, Math.PI, 0); ctx.stroke(); ctx.setLineDash([]); }
+  }
+  for (const t of TOWERS) {
+    sprite("tower", t.x, GROUND - 8, { alpha: t.stun > 0 ? 0.55 : 1 });
+    if (t.stun > 0) text("z", t.x + 6, GROUND - 22 - Math.round((clock * 4) % 3), { size: 6, color: C.ink });
+  }
+  sprite("wizard", 208, GROUND - 24 - (wizardCast > 0 ? 1 : 0));
+  if (wizardCast > 0) { ctx.fillStyle = C.bolt; ctx.fillRect(213, GROUND - 34, 2, 2); }
+
+  // sparks under the threats so effects never hide a hazard
+  for (const s of sparks) { ctx.globalAlpha = clamp(s.life * 2, 0, 1); ctx.fillStyle = s.col; ctx.fillRect(Math.round(s.x), Math.round(s.y), 1, 1); }
+  ctx.globalAlpha = 1;
+  for (const b of blasts) { ctx.globalAlpha = clamp(b.life / 0.75, 0, 1) * 0.9; ctx.strokeStyle = C.bolt; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.stroke(); ctx.globalAlpha *= 0.25; ctx.fillStyle = C.bolt; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill(); }
+  for (const r of rings) { ctx.globalAlpha = clamp(r.life * 3, 0, 1); ctx.strokeStyle = C.ink; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, TAU); ctx.stroke(); }
+  ctx.globalAlpha = 1;
+  // banners and the missed fact sit behind the threats, so they never hide a hazard
+  for (const p of popups) {
+    if (!p.fact && !p.big) continue;
+    ctx.globalAlpha = clamp(p.life / p.max * 3, 0, 1);
+    text(p.text, p.x, p.y, { size: p.fact ? 13 : 12, color: p.fact ? C.plate : C.bolt, align: "center", weight: 800, outline: C.plateInk });
+    ctx.globalAlpha = 1;
+  }
+  // threats
+  for (const f of foes) {
+    if (f.dead) continue;
+    if (f.kind === "crow") sprite("crow", f.x, f.y, { flipX: f.vx < 0, halo: true });
+    else if (f.kind === "cloud") { sprite("splitcloud", f.x, f.y, { scale: 1 }); }
+    else if (f.kind === "ball") sprite("balllightning", f.x, f.y);
+    else {
+      // a faint trail shows where it came from (Missile Command's contrail, as falling ice)
+      ctx.strokeStyle = "rgba(191,233,255,0.25)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(lerp(f.x, f.sx, 0.18), lerp(f.y, f.sy, 0.18)); ctx.stroke();
+      sprite("hailstone", f.x, f.y);
+    }
+  }
+  for (const f of foes) if (!f.dead) plate(f);
+  for (const b of bolts) lightning(b);
+  // popups
+  for (const p of popups) {
+    if (p.fact || p.big) continue;
+    const a = clamp(p.life / p.max * 3, 0, 1);
+    ctx.globalAlpha = a;
+    text(p.text, p.x, p.y - (1 - p.life / p.max) * 6, { size: 6, color: C.ink, align: "center", outline: C.plateInk });
+    if (p.icon) icon(p.icon, p.x - 22, p.y);
+    ctx.globalAlpha = 1;
+  }
+  if (flash > 0) { ctx.fillStyle = `rgba(255,250,220,${flash})`; ctx.fillRect(-4, -4, W + 8, H + 8); }
+  ctx.setTransform(S, 0, 0, S, 0, 0);
+  drawHud();
+}
+function drawHud() {
+  ctx.fillStyle = "rgba(6,9,22,0.85)"; ctx.fillRect(0, 0, W, TOP);
+  ctx.fillStyle = C.line; ctx.fillRect(0, TOP, W, 1);
+  text(String(score).padStart(6, "0"), 6, 7.5, { size: 8, weight: 800 });
+  // streak: ×N plus pips to the next step
+  const m = mult();
+  text(`×${m}`, 56, 7.5, { size: 8, color: m >= 4 ? C.bolt : C.ink, weight: 800 });
+  for (let i = 0; i < 3; i++) { const on = m < 8 && streak % 3 > i; ctx.fillStyle = C.ink; if (on) ctx.fillRect(72 + i * 5, 5, 3, 5); else ctx.fillRect(72 + i * 5, 9, 3, 1); }
+  if (m >= 4) { // Thunderclap ready: a bolt glyph and its key
+    ctx.fillStyle = C.bolt; const bx = 92; ctx.fillRect(bx + 2, 3, 2, 3); ctx.fillRect(bx + 1, 6, 4, 1); ctx.fillRect(bx + 2, 7, 2, 4);
+    text(lastDevice === "pad" ? "Y" : lastDevice === "touch" ? "⚡" : "SPACE", bx + 8, 7.5, { size: 6, color: C.bolt });
+  }
+  text(`WAVE ${wave}`, W / 2, 7.5, { size: 8, align: "center" });
+  text(`HI ${String(hi).padStart(6, "0")}`, W - 40, 7.5, { size: 7, align: "right", color: C.dim });
+  // pause (II) and speaker; muted shows a cross, not a colour
+  ctx.fillStyle = C.ink; ctx.fillRect(W - 28, 4, 2, 7); ctx.fillRect(W - 24, 4, 2, 7);
+  ctx.fillRect(W - 13, 6, 2, 3); ctx.fillRect(W - 11, 5, 1, 5); ctx.fillRect(W - 10, 4, 1, 7);
+  if (soundOn) { ctx.fillRect(W - 7, 6, 1, 3); ctx.fillRect(W - 5, 5, 1, 5); }
+  else { ctx.fillRect(W - 7, 5, 1, 1); ctx.fillRect(W - 6, 6, 1, 1); ctx.fillRect(W - 5, 7, 1, 1); ctx.fillRect(W - 6, 8, 1, 1); ctx.fillRect(W - 7, 9, 1, 1); ctx.fillRect(W - 4, 5, 1, 1); ctx.fillRect(W - 4, 9, 1, 1); }
+  if (demo) text("DEMO · click and type to play", 6, TOP + 8, { size: 6, color: C.dim });
+
+  // answer box
+  const bw = 48, bx = W / 2 - bw / 2, by = 206;
+  ctx.fillStyle = C.plateInk; ctx.fillRect(bx - 1, by - 1, bw + 2, 16);
+  ctx.fillStyle = misfireT > 0 ? C.panel : C.plate; ctx.fillRect(bx, by, bw, 14);
+  if (misfireT > 0) {
+    text(misfireText, W / 2, by + 7.5, { size: 10, color: C.dim, align: "center", weight: 800 });
+    ctx.fillStyle = C.dim; ctx.fillRect(W / 2 - 8, by + 7, 16, 1); // struck through
+  } else {
+    text(buffer, W / 2, by + 7.5, { size: 10, color: C.plateInk, align: "center", weight: 800 });
+    if (Math.floor(clock * 2) % 2 === 0 || reduceMotion) { ctx.font = `800 10px ${MONO}`; const tw = ctx.measureText(buffer).width; ctx.fillStyle = C.plateInk; ctx.fillRect(W / 2 + tw / 2 + 1, by + 3, 1, 9); }
+  }
+  // controller digit arc
+  if (lastDevice === "pad" && state === "play") {
+    for (let i = 0; i < 10; i++) {
+      const ang = Math.PI - (i / 9) * Math.PI;
+      const x = ARC.cx + Math.cos(ang) * (ARC.r + 6), y = ARC.cy - 6 - Math.sin(ang) * ARC.r;
+      if (i === padSel) { ctx.fillStyle = C.plate; ctx.fillRect(x - 5, y - 5, 10, 10); }
+      text(ARC_DIGITS[i], x, y + 0.5, { size: 7, color: i === padSel ? C.plateInk : C.ink, align: "center", weight: 800, outline: i === padSel ? null : C.plateInk });
+    }
+  }
+  if (paused) {
+    ctx.fillStyle = "rgba(6,9,22,0.7)"; ctx.fillRect(0, TOP + 1, W, H - TOP - 1);
+    text("PAUSED", W / 2, 96, { size: 16, color: C.bolt, align: "center", weight: 800 });
+    text("P to resume", W / 2, 116, { size: 7, color: C.dim, align: "center" });
+  }
+  if (state === "over") {
+    ctx.fillStyle = "rgba(6,9,22,0.78)"; ctx.fillRect(60, 44, W - 120, 118);
+    ctx.strokeStyle = C.line; ctx.strokeRect(60.5, 44.5, W - 121, 117);
+    text("The storm wins this time", W / 2, 62, { size: 13, color: C.bolt, align: "center", font: TITLE_FONT(), weight: 700 });
+    text(`SCORE ${score}`, W / 2, 82, { size: 8, align: "center" });
+    text("Facts to practise", W / 2, 100, { size: 6, color: C.dim, align: "center" });
+    missedRecent.forEach((f, i) => text(`${f.label} = ${f.ans}`, W / 2, 112 + i * 11, { size: 8, color: C.ice, align: "center", weight: 800 }));
+    text(demo ? "" : "Any key to try again", W / 2, 152, { size: 6, color: C.dim, align: "center" });
+  }
+}
+
+// ---- Mastery grid (× facts) ----
+const mg = document.getElementById("mgrid"), mgc = mg.getContext("2d");
+function cellShape(g, x, y, s, box, missed, seen) {
+  g.strokeStyle = "#5b6798"; g.lineWidth = 1;
+  if (!seen) { g.fillStyle = "#283361"; g.fillRect(x + s / 2 - 1, y + s / 2 - 1, 2, 2); return; }
+  g.strokeRect(x + 0.5, y + 0.5, s - 1, s - 1);
+  if (missed) { g.strokeStyle = "#edf1ff"; g.beginPath(); g.moveTo(x + 3, y + s - 3); g.lineTo(x + s - 3, y + 3); g.stroke(); return; }
+  g.fillStyle = "#edf1ff";
+  const h = Math.round((s - 4) * box / 4);
+  g.fillRect(x + 2, y + s - 2 - h, s - 4, h);
+}
+function drawGrid() {
+  const n = 12, s = 26, pad = 22;
+  mg.width = pad + n * (s + 2); mg.height = pad + n * (s + 2);
+  mgc.fillStyle = "#131a35"; mgc.fillRect(0, 0, mg.width, mg.height);
+  mgc.font = `700 11px ${MONO}`; mgc.fillStyle = "#9ba7d2"; mgc.textAlign = "center"; mgc.textBaseline = "middle";
+  for (let i = 1; i <= n; i++) { mgc.fillText(i, pad + (i - 1) * (s + 2) + s / 2, pad / 2); mgc.fillText(i, pad / 2, pad + (i - 1) * (s + 2) + s / 2); }
+  for (let a = 1; a <= n; a++) for (let b = 1; b <= n; b++) {
+    const x = pad + (b - 1) * (s + 2), y = pad + (a - 1) * (s + 2);
+    mgc.globalAlpha = a <= settings.mulR && b <= settings.mulR ? 1 : 0.3;
+    const m = memory.get(`${a}x${b}`);
+    cellShape(mgc, x, y, s, m?.box ?? 0, m?.missed, Boolean(m));
+  }
+  mgc.globalAlpha = 1;
+}
+document.querySelectorAll("#legend canvas").forEach((c) => {
+  const g = c.getContext("2d"); const box = Number(c.dataset.box);
+  g.fillStyle = "#131a35"; g.fillRect(0, 0, 28, 28);
+  cellShape(g, 1, 1, 26, Math.max(0, box), box === 0, box >= 0);
+});
+drawGrid();
+
+// ================= Sound =================
+let ac = null, master = null, musicBus = null, noiseBuf = null, soundOn = false;
+function audioOn() {
+  if (!soundOn) return;
+  if (!ac) {
+    try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+    master = ac.createGain(); master.gain.value = 0.5; master.connect(ac.destination);
+    musicBus = ac.createGain(); musicBus.gain.value = 0.55; musicBus.connect(master);
+    noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+    const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    startMusic();
+  }
+  if (ac.state === "suspended") ac.resume();
+}
+function setSound(on) {
+  soundOn = on;
+  document.querySelectorAll("[data-sound]").forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.sound === "on") === on)));
+  if (on) audioOn();
+  if (master) master.gain.setTargetAtTime(on ? 0.5 : 0, ac.currentTime, 0.03);
+}
+document.querySelectorAll("[data-sound]").forEach((b) => b.addEventListener("click", () => setSound(b.dataset.sound === "on")));
+const hz = (m) => 440 * 2 ** ((m - 69) / 12);
+const DORIAN = [0, 2, 3, 5, 7, 9, 10];
+const deg = (d, base = 62) => base + DORIAN[((d % 7) + 7) % 7] + 12 * Math.floor(d / 7); // degrees of D Dorian
+function env(g, t, a, peak, dec) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + dec); }
+function osc(type, f0, f1, t, dur, vol, dest = master, a = 0.005) {
+  const o = ac.createOscillator(), g = ac.createGain(); o.type = type;
+  o.frequency.setValueAtTime(f0, t); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  env(g, t, a, vol, dur); o.connect(g).connect(dest); o.start(t); o.stop(t + a + dur + 0.05);
+}
+function noise(t, dur, vol, type, freq, dest = master, q = 0.7) {
+  const s = ac.createBufferSource(); s.buffer = noiseBuf; const f = ac.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+  const g = ac.createGain(); env(g, t, 0.004, vol, dur); s.connect(f).connect(g).connect(dest); s.start(t); s.stop(t + dur + 0.05);
+}
+function pluck(m, t, vol, dest = musicBus, dur = 0.7) { osc("triangle", hz(m), hz(m), t, dur, vol, dest); osc("sine", hz(m + 12), hz(m + 12), t, dur * 0.5, vol * 0.35, dest); }
+function flute(m, t, dur, vol) {
+  const o = ac.createOscillator(), g = ac.createGain(), lfo = ac.createOscillator(), lg = ac.createGain();
+  o.type = "sine"; o.frequency.value = hz(m); lfo.frequency.value = 5.2; lg.gain.value = hz(m) * 0.006; lfo.connect(lg).connect(o.frequency);
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.06); g.gain.setValueAtTime(vol, t + Math.max(0.07, dur - 0.08)); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(musicBus); o.start(t); lfo.start(t); o.stop(t + dur + 0.05); lfo.stop(t + dur + 0.05);
+}
+function padChord(ms, t, dur, vol) {
+  const f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 900; const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.4); g.gain.setValueAtTime(vol, t + dur - 0.3); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+  f.connect(g).connect(musicBus);
+  for (const m of ms) for (const det of [-6, 6]) { const o = ac.createOscillator(); o.type = "sawtooth"; o.frequency.value = hz(m); o.detune.value = det; o.connect(f); o.start(t); o.stop(t + dur + 0.05); }
+}
+
+function sfx(name, arg) {
+  if (!soundOn || !ac) return;
+  const t = ac.currentTime;
+  switch (name) {
+    case "digit": pluck(deg(arg === 0 ? 7 : arg - 1, 74), t, 0.06, master, 0.18); break;
+    case "undo": osc("sine", 600, 400, t, 0.06, 0.04); break;
+    case "correct": { const d = 4 + Math.min(arg, 10); pluck(deg(d, 62), t, 0.12, master, 0.4); pluck(deg(d + 2, 62), t + 0.06, 0.1, master, 0.5); break; }
+    case "double": for (let i = 0; i < 4; i++) pluck(deg(4 + i * 2, 62), t + i * 0.05, 0.1, master, 0.5); break;
+    case "blast": noise(t, 0.25, 0.12, "lowpass", 900); osc("square", 1400, 300, t, 0.05, 0.03); break;
+    case "misfire": osc("square", 320, 170, t, 0.2, 0.04); osc("square", 331, 176, t, 0.2, 0.04); noise(t, 0.12, 0.05, "bandpass", 2500); break;
+    case "land": noise(t, 0.4, 0.2, "lowpass", 300); osc("sine", 110, 40, t, 0.35, 0.25); break;
+    case "lost": noise(t, 0.8, 0.28, "lowpass", 250); osc("sine", 90, 30, t, 0.7, 0.3); osc("triangle", hz(50), hz(49), t, 0.8, 0.1); break;
+    case "ward": for (const m of [69, 74]) pluck(m, t, 0.08, master, 0.4); break;
+    case "clap": noise(t, 1.1, 0.35, "lowpass", 500); for (const m of [50, 62, 65, 69, 74]) osc("sawtooth", hz(m), hz(m), t, 1.0, 0.04); osc("sine", 80, 30, t, 0.9, 0.35); break;
+    case "gift": for (let i = 0; i < 5; i++) pluck(deg(i * 2, 74), t + i * 0.07, 0.08, master, 0.4); break;
+    case "clear": [62, 65, 69, 72, 76, 74].forEach((m, i) => pluck(m, t + i * 0.11, 0.1, master, 0.8)); break;
+    case "over": [69, 67, 65, 62].forEach((m, i) => pluck(m - 12, t + i * 0.22, 0.12, master, 0.9)); break;
+    case "crow": osc("square", 900, 600, t, 0.08, 0.03); osc("square", 850, 560, t + 0.12, 0.09, 0.03); break;
+    case "crackle": for (let i = 0; i < 4; i++) noise(t + i * 0.04, 0.03, 0.05, "highpass", 4000); break;
+    case "split": noise(t, 0.35, 0.08, "bandpass", 700, master, 2); break;
+    case "pause": osc("sine", 660, 440, t, 0.1, 0.06); break;
+    case "resume": osc("sine", 440, 660, t, 0.1, 0.06); break;
+  }
+}
+// Sample buttons play even with the screen in demo mode.
+document.getElementById("sound-row").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-sfx]"); if (!b) return;
+  if (!soundOn) setSound(true);
+  audioOn(); if (!ac) return;
+  const k = b.dataset.sfx;
+  if (k === "digit") { sfx("digit", 7); setTimeout(() => sfx("digit", 2), 160); }
+  else if (k === "streak") { for (let i = 0; i < 8; i++) setTimeout(() => sfx("correct", i * 1.5), i * 220); }
+  else sfx(k, 0);
+});
+
+// Music: a lookahead sequencer on the audio clock. 110 BPM, eighth-note steps, 4-bar chord loop, 8-bar flute line.
+const BPM = 110, STEP = 60 / BPM / 2;
+const CHORDS = [[50, 62, 65, 69], [43, 55, 59, 62], [48, 60, 64, 67], [45, 57, 60, 64]]; // Dm  G  C  Am (B natural: the Dorian colour)
+const ARP = [0, 1, 2, 3, 2, 1, 2, 3];
+const MELODY = [ // [midi or null, eighths], one bar = 8
+  [[69, 2], [74, 2], [72, 1], [69, 1], [65, 2]], [[67, 3], [71, 1], [74, 2], [71, 2]], [[72, 2], [76, 2], [74, 1], [72, 1], [67, 2]], [[69, 6], [null, 2]],
+  [[74, 2], [77, 2], [76, 1], [74, 1], [69, 2]], [[71, 2], [74, 1], [71, 1], [67, 4]], [[76, 2], [72, 2], [74, 2], [76, 2]], [[74, 4], [null, 4]],
+];
+let step = 0, nextT = 0, seqTimer = null, danger = 0, leadOn = false, bars = 0;
+function updateMusicState() {
+  const low = foes.reduce((m, f) => (f.dead || f.kind === "crow" ? m : Math.max(m, f.p)), 0);
+  danger = state === "play" && low > 0.55 ? 1 : 0;
+}
+function startMusic() {
+  nextT = ac.currentTime + 0.1; step = 0;
+  seqTimer = setInterval(() => {
+    if (!ac || paused || state === "over") { if (ac) nextT = Math.max(nextT, ac.currentTime + 0.05); return; }
+    while (nextT < ac.currentTime + 0.12) { schedule(step, nextT); step++; nextT += STEP; }
+  }, 25);
+}
+let dangerBar = 0;
+function schedule(s, t) {
+  const inBar = s % 8, bar = Math.floor(s / 8), chord = CHORDS[bar % 4];
+  if (inBar === 0) { dangerBar = danger; leadOn = wave >= 2 || bar >= 8; padChord(chord.slice(1), t, STEP * 8, 0.018); }
+  const tones = [...chord.slice(1), chord[1] + 12];
+  pluck(tones[ARP[inBar]] + 12, t, 0.05);
+  if (inBar === 0 || inBar === 4) osc("triangle", hz(chord[0]), hz(chord[0]), t, STEP * 3, 0.09, musicBus);
+  if (leadOn) {
+    const phrase = MELODY[bar % 8]; let at = 0;
+    for (const [m, len] of phrase) { if (at === inBar && m) flute(m, t, len * STEP * 0.95, 0.05); at += len; }
+  }
+  if (dangerBar) {
+    if (inBar === 0 || inBar === 4) osc("sine", 130, 45, t, 0.22, 0.3, musicBus);
+    if (inBar === 2 || inBar === 6) noise(t, 0.12, 0.08, "bandpass", 1800, musicBus);
+    noise(t, 0.03, 0.025, "highpass", 7000, musicBus);
+    if (inBar === 0) noise(t, STEP * 8, 0.05, "lowpass", 120, musicBus);
+  }
+}
+
+// ================= Loop =================
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  update(dt, now);
+  draw();
+  requestAnimationFrame(frame);
+}
+syncSettings();
+newGame();
+document.fonts?.load(`800 28px ${MONO}`).catch(() => {});
+requestAnimationFrame(frame);
+</script>

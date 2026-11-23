@@ -1,0 +1,13 @@
+{
+  "wizard": {"subjects": ["storm mage", "wizard", "chibi wizard"], "picks": [1212350, 1388269, 1388279, 1388293, 1388296, 233215, 233226, 233248], "browse": 64, "chosen": 233226},
+  "tower": {"subjects": ["wizard tower", "castle tower", "watchtower"], "picks": [1389214, 1389215, 1389220, 1389229, 1389231, 1389245, 204714, 204717], "browse": 64, "chosen": 1389231},
+  "cottage": {"subjects": ["cottage", "tiny house", "log cabin"], "picks": [289689, 289690, 289704, 289715, 289719, 289731, 289743, 1279723], "browse": 64, "chosen": 289731},
+  "rubble": {"subjects": ["rubble pile", "rubble chunk"], "picks": [1030835, 1030842, 1030850, 1030854, 1030865, 1030873, 1030881, 1030894], "browse": 64, "chosen": 1030835},
+  "hailstone": {"subjects": ["hailstone", "ice bomb"], "picks": [563486, 563490, 563500, 563515, 563524, 563530, 563536, 563544], "browse": 64, "chosen": 563486},
+  "splitcloud": {"subjects": ["storm cloud", "thundercloud", "rain cloud"], "picks": [1211587, 1211612, 1211615, 1275566, 1275569, 1275583, 1275585, 1275592], "browse": 64, "chosen": 1275566},
+  "crow": {"subjects": ["crow", "raven"], "picks": [308446, 308460, 308493, 990791, 990792, 990825, 308449, 308474], "browse": 64, "chosen": 308460},
+  "balllightning": {"subjects": ["ball lightning", "electric orb", "plasma ball"], "picks": [53758, 53759, 53775, 53777, 53779, 53791, 403372, 403422], "browse": 64, "chosen": 403422},
+  "gust": {"subjects": ["feather", "eagle feather"], "picks": [432476, 432483, 432484, 432512, 432519, 432525, 392580, 432478], "browse": 64, "chosen": 432476},
+  "mend": {"subjects": ["hammer", "claw hammer"], "picks": [569877, 569880, 569885, 569888, 569894, 569921, 569936, 249454], "browse": 64, "chosen": 569877},
+  "ward": {"subjects": ["energy shield", "round shield", "shield icon"], "picks": [416199, 416215, 416217, 1091622, 1091634, 1091640, 1091642, 1091658], "browse": 64, "chosen": 416199}
+}
